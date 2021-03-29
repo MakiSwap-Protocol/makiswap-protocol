@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity >=0.6.2;
+pragma solidity >=0.5.16;
 
 // import 'maki-swap-periphery/contracts/IMakiswapRouter01
 

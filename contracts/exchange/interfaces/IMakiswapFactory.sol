@@ -3,7 +3,7 @@ pragma solidity >=0.5.0;
 
 // import 'makiswap-core/contracts/interfaces/IMakiswapFactory.sol';
 
-interface IMakiswapV2Factory {
+interface IMakiswapFactory {
     event PairCreated(address indexed token0, address indexed token1, address pair, uint);
 
     function feeTo() external view returns (address);

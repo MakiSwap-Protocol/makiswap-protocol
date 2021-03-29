@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity >=0.6.6;
+pragma solidity >=0.5.6;
 // import 'makiswap-core/contracts/libraries/SafeMath.sol';
 
 // a library for handling binary fixed point numbers (https://en.wikipedia.org/wiki/Q_(number_format))

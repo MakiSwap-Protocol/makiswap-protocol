@@ -1,15 +1,18 @@
-// SPDX-License-Ideuntifier: MIT
+// SPDX-License-Identifier: MIT
 
-pragma solidity ^0.6.12;
+pragma solidity >=0.6.6;
 
-// ** LOCAL IMPORTS ** //
-import 'makiswap-core/contracts/interfaces/IMakiswapFactory.sol';
-import 'maki-swap-lib/contracts/utils/TransferHelper.sol';
+// ** GLOBAL IMPORTS ** //
+// import 'makiswap-core/contracts/interfaces/IMakiswapFactory.sol';
+// import 'maki-swap-lib/contracts/utils/TransferHelper.sol';
 // import 'maki-swap-periphery/contracts/libraries/MakiswapLibrary.sol';
 // import 'maki-swap-periphery/contracts/interfaces/IMakiswapRouter02.sol';
 // import 'maki-swap-lib/contracts/math/SafeMath.sol';
+// import 'makiswap-core/contracts/interfaces/IHRC20.sol';
 
-// ** GLOBAL IMPORTS ** //
+// ** LOCAL IMPORTS ** //
+import './interfaces/IMakiswapFactory.sol';
+import './utils/TransferHelper.sol';
 import './interfaces/IMakiswapRouter02.sol';
 import './libraries/MakiswapLibrary.sol';
 import './interfaces/IHRC20.sol';
@@ -18,9 +21,9 @@ import './interfaces/IWHT.sol';
 contract MakiswapRouter is IMakiswapRouter02 {
     using SafeMath for uint;
 
-    address public override factory;
+    address public factory;
 
-    address public override WHT;
+    address public WHT;
 
     modifier ensure(uint deadline) {
         require(deadline >= block.timestamp, 'MakiswapRouter: EXPIRED');

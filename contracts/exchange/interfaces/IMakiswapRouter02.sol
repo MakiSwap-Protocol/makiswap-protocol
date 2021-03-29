@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity >=0.6.2;
+pragma solidity >=0.5.16;
 
-import './IMakiswapRouter01.sol';
 // import 'maki-swap-periphery/contracts/IMakiswapRouter02.sol';
+import './IMakiswapRouter01.sol';
 
 interface IMakiswapRouter02 is IMakiswapRouter01 {
     function removeLiquidityHTSupportingFeeOnTransferTokens(

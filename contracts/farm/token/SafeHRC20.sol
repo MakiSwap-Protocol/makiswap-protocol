@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity >=0.6.0 <0.8.0;
+pragma solidity >=0.5.0 <0.8.0;
 
 import 'maki-swap-lib/contracts/token/HRC20/IHRC20.sol';
 import 'maki-swap-lib/contracts/math/SafeMath.sol';

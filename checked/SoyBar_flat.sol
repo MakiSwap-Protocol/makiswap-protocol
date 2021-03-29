@@ -1,3 +1,209 @@
+// File: maki-swap-lib/contracts/GSN/Context.sol
+
+// SPDX-License-Identifier: MIT
+
+pragma solidity >=0.6.0 <0.8.0;
+
+/*
+ * @dev Provides information about the current execution context, including the
+ * sender of the transaction and its data. While these are generally available
+ * via msg.sender and msg.data, they should not be accessed in such a direct
+ * manner, since when dealing with meta-transactions the account sending and
+ * paying for execution may not be the actual sender (as far as an application
+ * is concerned).
+ *
+ * This contract is only required for intermediate, library-like contracts.
+ */
+abstract contract Context {
+    function _msgSender() internal view virtual returns (address) {
+        return msg.sender;
+    }
+
+    function _msgData() internal view virtual returns (bytes calldata) {
+        this; // silence state mutability warning without generating bytecode - see https://github.com/ethereum/solidity/issues/2691
+        return msg.data;
+    }
+}
+
+// File: maki-swap-lib/contracts/access/Ownable.sol
+
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+pragma solidity >=0.4.0;
+
+
+/**
+ * @dev Contract module which provides a basic access control mechanism, where
+ * there is an account (an owner) that can be granted exclusive access to
+ * specific functions.
+ *
+ * By default, the owner account will be the one that deploys the contract. This
+ * can later be changed with {transferOwnership}.
+ *
+ * This module is used through inheritance. It will make available the modifier
+ * `onlyOwner`, which can be applied to your functions to restrict their use to
+ * the owner.
+ */
+contract Ownable is Context {
+    address private _owner;
+
+    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
+
+    /**
+     * @dev Initializes the contract setting the deployer as the initial owner.
+     */
+    constructor() internal {
+        address msgSender = _msgSender();
+        _owner = msgSender;
+        emit OwnershipTransferred(address(0), msgSender);
+    }
+
+    /**
+     * @dev Returns the address of the current owner.
+     */
+    function owner() public view returns (address) {
+        return _owner;
+    }
+
+    /**
+     * @dev Throws if called by any account other than the owner.
+     */
+    modifier onlyOwner() {
+        require(_owner == _msgSender(), 'Ownable: caller is not the owner');
+        _;
+    }
+
+    /**
+     * @dev Leaves the contract without owner. It will not be possible to call
+     * `onlyOwner` functions anymore. Can only be called by the current owner.
+     *
+     * NOTE: Renouncing ownership will leave the contract without an owner,
+     * thereby removing any functionality that is only available to the owner.
+     */
+    function renounceOwnership() public onlyOwner {
+        emit OwnershipTransferred(_owner, address(0));
+        _owner = address(0);
+    }
+
+    /**
+     * @dev Transfers ownership of the contract to a new account (`newOwner`).
+     * Can only be called by the current owner.
+     */
+    function transferOwnership(address newOwner) public onlyOwner {
+        _transferOwnership(newOwner);
+    }
+
+    /**
+     * @dev Transfers ownership of the contract to a new account (`newOwner`).
+     */
+    function _transferOwnership(address newOwner) internal {
+        require(newOwner != address(0), 'Ownable: new owner is the zero address');
+        emit OwnershipTransferred(_owner, newOwner);
+        _owner = newOwner;
+    }
+}
+
+// File: maki-swap-lib/contracts/token/HRC20/IHRC20.sol
+
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+pragma solidity >=0.4.0;
+
+interface IHRC20 {
+    /**
+     * @dev Returns the amount of tokens in existence.
+     */
+    function totalSupply() external view returns (uint256);
+
+    /**
+     * @dev Returns the token decimals.
+     */
+    function decimals() external view returns (uint8);
+
+    /**
+     * @dev Returns the token symbol.
+     */
+    function symbol() external view returns (string memory);
+
+    /**
+     * @dev Returns the token name.
+     */
+    function name() external view returns (string memory);
+
+    /**
+     * @dev Returns the ht token owner.
+     */
+    function getOwner() external view returns (address);
+
+    /**
+     * @dev Returns the amount of tokens owned by `account`.
+     */
+    function balanceOf(address account) external view returns (uint256);
+
+    /**
+     * @dev Moves `amount` tokens from the caller's account to `recipient`.
+     *
+     * Returns a boolean value indicating whether the operation succeeded.
+     *
+     * Emits a {Transfer} event.
+     */
+    function transfer(address recipient, uint256 amount) external returns (bool);
+
+    /**
+     * @dev Returns the remaining number of tokens that `spender` will be
+     * allowed to spend on behalf of `owner` through {transferFrom}. This is
+     * zero by default.
+     *
+     * This value changes when {approve} or {transferFrom} are called.
+     */
+    function allowance(address _owner, address spender) external view returns (uint256);
+
+    /**
+     * @dev Sets `amount` as the allowance of `spender` over the caller's tokens.
+     *
+     * Returns a boolean value indicating whether the operation succeeded.
+     *
+     * IMPORTANT: Beware that changing an allowance with this method brings the risk
+     * that someone may use both the old and the new allowance by unfortunate
+     * transaction ordering. One possible solution to mitigate this race
+     * condition is to first reduce the spender's allowance to 0 and set the
+     * desired value afterwards:
+     * https://github.com/ethereum/EIPs/issues/20#issuecomment-263524729
+     *
+     * Emits an {Approval} event.
+     */
+    function approve(address spender, uint256 amount) external returns (bool);
+
+    /**
+     * @dev Moves `amount` tokens from `sender` to `recipient` using the
+     * allowance mechanism. `amount` is then deducted from the caller's
+     * allowance.
+     *
+     * Returns a boolean value indicating whether the operation succeeded.
+     *
+     * Emits a {Transfer} event.
+     */
+    function transferFrom(
+        address sender,
+        address recipient,
+        uint256 amount
+    ) external returns (bool);
+
+    /**
+     * @dev Emitted when `value` tokens are moved from one account (`from`) to
+     * another (`to`).
+     *
+     * Note that `value` may be zero.
+     */
+    event Transfer(address indexed from, address indexed to, uint256 value);
+
+    /**
+     * @dev Emitted when the allowance of a `spender` for an `owner` is set by
+     * a call to {approve}. `value` is the new allowance.
+     */
+    event Approval(address indexed owner, address indexed spender, uint256 value);
+}
+
 // File: maki-swap-lib/contracts/math/SafeMath.sol
 
 // SPDX-License-Identifier: MIT
@@ -190,107 +396,6 @@ library SafeMath {
     }
 }
 
-// File: maki-swap-lib/contracts/token/HRC20/IHRC20.sol
-
-// SPDX-License-Identifier: GPL-3.0-or-later
-
-pragma solidity >=0.4.0;
-
-interface IHRC20 {
-    /**
-     * @dev Returns the amount of tokens in existence.
-     */
-    function totalSupply() external view returns (uint256);
-
-    /**
-     * @dev Returns the token decimals.
-     */
-    function decimals() external view returns (uint8);
-
-    /**
-     * @dev Returns the token symbol.
-     */
-    function symbol() external view returns (string memory);
-
-    /**
-     * @dev Returns the token name.
-     */
-    function name() external view returns (string memory);
-
-    /**
-     * @dev Returns the ht token owner.
-     */
-    function getOwner() external view returns (address);
-
-    /**
-     * @dev Returns the amount of tokens owned by `account`.
-     */
-    function balanceOf(address account) external view returns (uint256);
-
-    /**
-     * @dev Moves `amount` tokens from the caller's account to `recipient`.
-     *
-     * Returns a boolean value indicating whether the operation succeeded.
-     *
-     * Emits a {Transfer} event.
-     */
-    function transfer(address recipient, uint256 amount) external returns (bool);
-
-    /**
-     * @dev Returns the remaining number of tokens that `spender` will be
-     * allowed to spend on behalf of `owner` through {transferFrom}. This is
-     * zero by default.
-     *
-     * This value changes when {approve} or {transferFrom} are called.
-     */
-    function allowance(address _owner, address spender) external view returns (uint256);
-
-    /**
-     * @dev Sets `amount` as the allowance of `spender` over the caller's tokens.
-     *
-     * Returns a boolean value indicating whether the operation succeeded.
-     *
-     * IMPORTANT: Beware that changing an allowance with this method brings the risk
-     * that someone may use both the old and the new allowance by unfortunate
-     * transaction ordering. One possible solution to mitigate this race
-     * condition is to first reduce the spender's allowance to 0 and set the
-     * desired value afterwards:
-     * https://github.com/ethereum/EIPs/issues/20#issuecomment-263524729
-     *
-     * Emits an {Approval} event.
-     */
-    function approve(address spender, uint256 amount) external returns (bool);
-
-    /**
-     * @dev Moves `amount` tokens from `sender` to `recipient` using the
-     * allowance mechanism. `amount` is then deducted from the caller's
-     * allowance.
-     *
-     * Returns a boolean value indicating whether the operation succeeded.
-     *
-     * Emits a {Transfer} event.
-     */
-    function transferFrom(
-        address sender,
-        address recipient,
-        uint256 amount
-    ) external returns (bool);
-
-    /**
-     * @dev Emitted when `value` tokens are moved from one account (`from`) to
-     * another (`to`).
-     *
-     * Note that `value` may be zero.
-     */
-    event Transfer(address indexed from, address indexed to, uint256 value);
-
-    /**
-     * @dev Emitted when the allowance of a `spender` for an `owner` is set by
-     * a call to {approve}. `value` is the new allowance.
-     */
-    event Approval(address indexed owner, address indexed spender, uint256 value);
-}
-
 // File: maki-swap-lib/contracts/utils/Address.sol
 
 // SPDX-License-Identifier: MIT
@@ -452,212 +557,6 @@ library Address {
                 revert(errorMessage);
             }
         }
-    }
-}
-
-// File: maki-swap-lib/contracts/token/HRC20/SafeHRC20.sol
-
-// SPDX-License-Identifier: MIT
-
-pragma solidity >=0.6.0 <0.8.0;
-
-
-
-
-/**
- * @title SafeHRC20
- * @dev Wrappers around HRC20 operations that throw on failure (when the token
- * contract returns false). Tokens that return no value (and instead revert or
- * throw on failure) are also supported, non-reverting calls are assumed to be
- * successful.
- * To use this library you can add a `using SafeHRC20 for IHRC20;` statement to your contract,
- * which allows you to call the safe operations as `token.safeTransfer(...)`, etc.
- */
-library SafeHRC20 {
-    using SafeMath for uint256;
-    using Address for address;
-
-    function safeTransfer(
-        IHRC20 token,
-        address to,
-        uint256 value
-    ) internal {
-        _callOptionalReturn(token, abi.encodeWithSelector(token.transfer.selector, to, value));
-    }
-
-    function safeTransferFrom(
-        IHRC20 token,
-        address from,
-        address to,
-        uint256 value
-    ) internal {
-        _callOptionalReturn(token, abi.encodeWithSelector(token.transferFrom.selector, from, to, value));
-    }
-
-    /**
-     * @dev Deprecated. This function has issues similar to the ones found in
-     * {IHRC20-approve}, and its usage is discouraged.
-     *
-     * Whenever possible, use {safeIncreaseAllowance} and
-     * {safeDecreaseAllowance} instead.
-     */
-    function safeApprove(
-        IHRC20 token,
-        address spender,
-        uint256 value
-    ) internal {
-        // safeApprove should only be called when setting an initial allowance,
-        // or when resetting it to zero. To increase and decrease it, use
-        // 'safeIncreaseAllowance' and 'safeDecreaseAllowance'
-        // solhint-disable-next-line max-line-length
-        require(
-            (value == 0) || (token.allowance(address(this), spender) == 0),
-            'SafeHRC20: approve from non-zero to non-zero allowance'
-        );
-        _callOptionalReturn(token, abi.encodeWithSelector(token.approve.selector, spender, value));
-    }
-
-    function safeIncreaseAllowance(
-        IHRC20 token,
-        address spender,
-        uint256 value
-    ) internal {
-        uint256 newAllowance = token.allowance(address(this), spender).add(value);
-        _callOptionalReturn(token, abi.encodeWithSelector(token.approve.selector, spender, newAllowance));
-    }
-
-    function safeDecreaseAllowance(
-        IHRC20 token,
-        address spender,
-        uint256 value
-    ) internal {
-        uint256 newAllowance =
-            token.allowance(address(this), spender).sub(value, 'SafeHRC20: decreased allowance below zero');
-        _callOptionalReturn(token, abi.encodeWithSelector(token.approve.selector, spender, newAllowance));
-    }
-
-    /**
-     * @dev Imitates a Solidity high-level call (i.e. a regular function call to a contract), relaxing the requirement
-     * on the return value: the return value is optional (but if data is returned, it must not be false).
-     * @param token The token targeted by the call.
-     * @param data The call data (encoded using abi.encode or one of its variants).
-     */
-    function _callOptionalReturn(IHRC20 token, bytes memory data) private {
-        // We need to perform a low level call here, to bypass Solidity's return data size checking mechanism, since
-        // we're implementing it ourselves. We use {Address.functionCall} to perform this call, which verifies that
-        // the target address contains contract code and also asserts for success in the low-level call.
-
-        bytes memory returndata = address(token).functionCall(data, 'SafeHRC20: low-level call failed');
-        if (returndata.length > 0) {
-            // Return data is optional
-            // solhint-disable-next-line max-line-length
-            require(abi.decode(returndata, (bool)), 'SafeHRC20: HRC20 operation did not succeed');
-        }
-    }
-}
-
-// File: maki-swap-lib/contracts/GSN/Context.sol
-
-// SPDX-License-Identifier: MIT
-
-pragma solidity >=0.6.0 <0.8.0;
-
-/*
- * @dev Provides information about the current execution context, including the
- * sender of the transaction and its data. While these are generally available
- * via msg.sender and msg.data, they should not be accessed in such a direct
- * manner, since when dealing with meta-transactions the account sending and
- * paying for execution may not be the actual sender (as far as an application
- * is concerned).
- *
- * This contract is only required for intermediate, library-like contracts.
- */
-abstract contract Context {
-    function _msgSender() internal view virtual returns (address) {
-        return msg.sender;
-    }
-
-    function _msgData() internal view virtual returns (bytes calldata) {
-        this; // silence state mutability warning without generating bytecode - see https://github.com/ethereum/solidity/issues/2691
-        return msg.data;
-    }
-}
-
-// File: maki-swap-lib/contracts/access/Ownable.sol
-
-// SPDX-License-Identifier: GPL-3.0-or-later
-
-pragma solidity >=0.4.0;
-
-
-/**
- * @dev Contract module which provides a basic access control mechanism, where
- * there is an account (an owner) that can be granted exclusive access to
- * specific functions.
- *
- * By default, the owner account will be the one that deploys the contract. This
- * can later be changed with {transferOwnership}.
- *
- * This module is used through inheritance. It will make available the modifier
- * `onlyOwner`, which can be applied to your functions to restrict their use to
- * the owner.
- */
-contract Ownable is Context {
-    address private _owner;
-
-    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
-
-    /**
-     * @dev Initializes the contract setting the deployer as the initial owner.
-     */
-    constructor() internal {
-        address msgSender = _msgSender();
-        _owner = msgSender;
-        emit OwnershipTransferred(address(0), msgSender);
-    }
-
-    /**
-     * @dev Returns the address of the current owner.
-     */
-    function owner() public view returns (address) {
-        return _owner;
-    }
-
-    /**
-     * @dev Throws if called by any account other than the owner.
-     */
-    modifier onlyOwner() {
-        require(_owner == _msgSender(), 'Ownable: caller is not the owner');
-        _;
-    }
-
-    /**
-     * @dev Leaves the contract without owner. It will not be possible to call
-     * `onlyOwner` functions anymore. Can only be called by the current owner.
-     *
-     * NOTE: Renouncing ownership will leave the contract without an owner,
-     * thereby removing any functionality that is only available to the owner.
-     */
-    function renounceOwnership() public onlyOwner {
-        emit OwnershipTransferred(_owner, address(0));
-        _owner = address(0);
-    }
-
-    /**
-     * @dev Transfers ownership of the contract to a new account (`newOwner`).
-     * Can only be called by the current owner.
-     */
-    function transferOwnership(address newOwner) public onlyOwner {
-        _transferOwnership(newOwner);
-    }
-
-    /**
-     * @dev Transfers ownership of the contract to a new account (`newOwner`).
-     */
-    function _transferOwnership(address newOwner) internal {
-        require(newOwner != address(0), 'Ownable: new owner is the zero address');
-        emit OwnershipTransferred(_owner, newOwner);
-        _owner = newOwner;
     }
 }
 
@@ -1496,371 +1395,5 @@ contract SoyBar is HRC20('SoyBar Token', 'SOY') {
         uint256 chainId;
         assembly { chainId := chainid() }
         return chainId;
-    }
-}
-
-// File: contracts/farm/MasterChef.sol
-
-// SPDX-License-Identifier: MIT
-
-pragma solidity >=0.5.16;
-
-
-
-
-
-
-
-// import "@nomiclabs/buidler/console.sol";
-
-interface IMigratorChef {
-    // Perform LP token migration from legacy MakiSwap.
-    // Take the current LP token address and return the new LP token address.
-    // Migrator should have full access to the caller's LP token.
-    // Return the new LP token address.
-    //
-    // XXX Migrator must have allowance access to MakiSwap LP tokens.
-    // MakiSwap must mint EXACTLY the same amount of Maki LP tokens or
-    // else something bad will happen. Traditional MakiSwap does not
-    // do that so be careful!
-    function migrate(IHRC20 token) external returns (IHRC20);
-}
-
-// MasterChef is the master of Maki. She can make Maki and she is a fair lady.
-//
-// Note that it's ownable and the owner wields tremendous power. The ownership
-// will be transferred to a governance smart contract once MAKI is sufficiently
-// distributed and the community can show to govern itself.
-
-contract MasterChef is Ownable {
-    using SafeMath for uint256;
-    using SafeHRC20 for IHRC20;
-
-    // Info of each user.
-    struct UserInfo {
-        uint256 amount;     // How many LP tokens the user has provided.
-        uint256 rewardDebt; // Reward debt. See explanation below.
-        //
-        // We do some fancy math here. Basically, any point in time, the amount of MAKI
-        // entitled to a user but is pending to be distributed is:
-        //
-        //   pending reward = (user.amount * pool.accMakiPerShare) - user.rewardDebt - user.taxedAmount
-        //
-        // Whenever a user deposits or withdraws LP tokens to a pool. Here's what happens:
-        //   1. The pool's `accMakiPerShare` (and `lastRewardBlock`) gets updated.
-        //   2. User receives the pending reward sent to his/her address.
-        //   3. User's `amount` gets updated and taxed by 'taxedAmount'.
-        //   4. User's `rewardDebt` gets updated.
-    }
-
-    // Info of each pool.
-    struct PoolInfo {
-        IHRC20 lpToken;           // Address of LP token contract.
-        uint256 allocPoint;       // How many allocation points assigned to this pool. MAKIs to distribute per block.
-        uint256 taxRate;          // Rate at which the LP token deposit is taxed.
-        uint256 lastRewardBlock;  // Last block number that MAKIs distribution occurs.
-        uint256 accMakiPerShare; // Accumulated MAKIs per share, times 1e12. See below.
-    }
-
-
-    //** ADDRESSES **//
-
-    // The MAKI TOKEN!
-    MakiToken public maki;
-    // The SOY TOKEN!
-    SoyBar public soy;
-    // Admin address, which recieves 1.5 MAKI per block (mutable by admin)
-    address public admin;
-    // Treasury address, which recieves 1.5 MAKI per block (mutable by admin and dev)
-    address public treasury;
-    // The migrator contract. It has a lot of power. Can only be set through governance (owner).
-    IMigratorChef public migrator;
-
-
-    // ** GLOBAL VARIABLES ** //
-
-    // MAKI tokens created per block.
-    uint256 public makiPerBlock;
-    // Bonus muliplier for early maki makers.
-    uint256 public BONUS_MULTIPLIER = 1;
-    // The block number when MAKI mining starts.
-    uint256 public startBlock;
-    // Total allocation points. Must be the sum of all allocation points in all pools.
-    uint256 public totalAllocPoint = 0;
-    
-
-    // ** POOL VARIABLES ** //
-
-    // Info of each pool.
-    PoolInfo[] public poolInfo;
-    // Info of each user that stakes LP tokens.
-    mapping (uint256 => mapping (address => UserInfo)) public userInfo;
-
-    event Deposit(address indexed user, uint256 indexed pid, uint256 amount);
-    event Withdraw(address indexed user, uint256 indexed pid, uint256 amount);
-
-    constructor(
-        MakiToken _maki,
-        SoyBar _soy,
-        address _admin,
-        address _treasury,
-        uint256 _makiPerBlock,
-        uint256 _startBlock
-    ) public {
-        maki = _maki;
-        soy = _soy;
-        admin = _admin;
-        treasury = _treasury;
-        makiPerBlock = _makiPerBlock;
-        startBlock = _startBlock;
-
-        // staking pool
-        poolInfo.push(PoolInfo({
-            lpToken: _maki,
-            allocPoint: 1000,
-            taxRate: 0,
-            lastRewardBlock: startBlock,
-            accMakiPerShare: 0
-        }));
-
-        totalAllocPoint = 1000;
-
-    }
-
-    function updateMultiplier(uint256 multiplierNumber) public onlyOwner {
-        BONUS_MULTIPLIER = multiplierNumber;
-    }
-
-    function poolLength() external view returns (uint256) {
-        return poolInfo.length;
-    }
-
-    // VALIDATION -- ELIMINATES POOL DUPLICATION RISK -- NONE
-    function checkPoolDuplicate(IHRC20 _token) public view {
-        uint256 length = poolInfo.length;
-        for (uint256 pid = 0; pid < length; ++pid) {
-            require(poolInfo[pid].lpToken != _token, "add: existing pool?");
-        }
-    }
-
-    // ADD -- NEW LP TOKEN POOL -- OWNER
-    function add(uint256 _allocPoint, IHRC20 _lpToken, uint256 _taxRate, bool _withUpdate) public onlyOwner {
-        if (_withUpdate) {
-            massUpdatePools();
-        }
-        uint256 lastRewardBlock = block.number > startBlock ? block.number : startBlock;
-        totalAllocPoint = totalAllocPoint.add(_allocPoint);
-        poolInfo.push(PoolInfo({
-            lpToken: _lpToken,
-            allocPoint: _allocPoint,
-            taxRate: _taxRate,
-            lastRewardBlock: lastRewardBlock,
-            accMakiPerShare: 0
-        }));
-        updateStakingPool();
-    }
-
-    // UPDATE -- ALLOCATION POINT -- OWNER
-    function set(uint256 _pid, uint256 _allocPoint, bool _withUpdate) public onlyOwner {
-        if (_withUpdate) {
-            massUpdatePools();
-        }
-        uint256 prevAllocPoint = poolInfo[_pid].allocPoint;
-        poolInfo[_pid].allocPoint = _allocPoint;
-        if (prevAllocPoint != _allocPoint) {
-            totalAllocPoint = totalAllocPoint.sub(prevAllocPoint).add(_allocPoint);
-            updateStakingPool();
-        }
-    }
-
-    // UPDATE -- STAKING POOL -- INTERNAL
-    function updateStakingPool() internal {
-        uint256 length = poolInfo.length;
-        uint256 points = 0;
-        for (uint256 pid = 1; pid < length; ++pid) {
-            points = points.add(poolInfo[pid].allocPoint);
-        }
-        if (points != 0) {
-            points = points.div(3);
-            totalAllocPoint = totalAllocPoint.sub(poolInfo[0].allocPoint).add(points);
-            poolInfo[0].allocPoint = points;
-        }
-    }
-
-    // SET -- MIGRATOR CONTRACT -- OWNER
-    function setMigrator(IMigratorChef _migrator) public onlyOwner {
-        migrator = _migrator;
-    }
-
-    // MIGRATE -- LP TOKENS TO ANOTHER CONTRACT -- MIGRATOR
-    function migrate(uint256 _pid) public {
-        require(address(migrator) != address(0), "migrate: no migrator");
-        PoolInfo storage pool = poolInfo[_pid];
-        IHRC20 lpToken = pool.lpToken;
-        uint256 bal = lpToken.balanceOf(address(this));
-        lpToken.safeApprove(address(migrator), bal);
-        IHRC20 newLpToken = migrator.migrate(lpToken);
-        require(bal == newLpToken.balanceOf(address(this)), "migrate: bad");
-        pool.lpToken = newLpToken;
-    }
-
-    // VIEW -- BONUS MULTIPLIER -- PUBLIC
-    function getMultiplier(uint256 _from, uint256 _to) public view returns (uint256) {
-        return _to.sub(_from).mul(BONUS_MULTIPLIER);
-    }
-
-    // VIEW -- PENDING MAKI
-    function pendingMaki(uint256 _pid, address _user) external view returns (uint256) {
-        PoolInfo storage pool = poolInfo[_pid];
-        UserInfo storage user = userInfo[_pid][_user];
-        uint256 accMakiPerShare = pool.accMakiPerShare;
-        uint256 lpSupply = pool.lpToken.balanceOf(address(this));
-        if (block.number > pool.lastRewardBlock && lpSupply != 0) {
-            uint256 multiplier = getMultiplier(pool.lastRewardBlock, block.number);
-            uint256 makiReward = multiplier.mul(makiPerBlock).mul(pool.allocPoint).div(totalAllocPoint);
-            accMakiPerShare = accMakiPerShare.add(makiReward.mul(1e12).div(lpSupply));
-        }
-        return user.amount.mul(accMakiPerShare).div(1e12).sub(user.rewardDebt);
-    }
-
-    // UPDATE -- REWARD VARIABLES FOR ALL POOLS (HIGH GAS POSSIBLE) -- PUBLIC
-    function massUpdatePools() public {
-        uint256 length = poolInfo.length;
-        for (uint256 pid = 0; pid < length; ++pid) {
-            updatePool(pid);
-        }
-    }
-
-
-    // UPDATE -- REWARD VARIABLES (POOL) -- PUBLIC
-    function updatePool(uint256 _pid) public {
-        PoolInfo storage pool = poolInfo[_pid];
-        if (block.number <= pool.lastRewardBlock) {
-            return;
-        }
-        uint256 lpSupply = pool.lpToken.balanceOf(address(this));
-        if (lpSupply == 0) {
-            pool.lastRewardBlock = block.number;
-            return;
-        }
-        uint256 multiplier = getMultiplier(pool.lastRewardBlock, block.number);
-        uint256 makiReward = 
-            multiplier.mul(makiPerBlock).mul(pool.allocPoint).div(totalAllocPoint);
-
-        maki.mint(admin, makiReward.mul(15).div(130)); // 1.5 MAKI per block to admin
-        maki.mint(treasury, makiReward.mul(15).div(130)); // 1.5 MAKI per block to treasury
-        
-        maki.mint(address(soy), makiReward);
-
-        pool.accMakiPerShare = pool.accMakiPerShare.add(
-            makiReward.mul(1e12).div(lpSupply));
-
-        pool.lastRewardBlock = block.number;
-    }
-
-    // DEPOSIT -- LP TOKENS -- LP OWNERS
-    function deposit(uint256 _pid, uint256 _amount) public {
-
-        require (_pid != 0, 'deposit MAKI by staking');
-
-        PoolInfo storage pool = poolInfo[_pid];
-        UserInfo storage user = userInfo[_pid][msg.sender];
-        updatePool(_pid);
-        uint256 taxedAmount = pool.taxRate == 0 ? 0 : _amount.div(pool.taxRate); // fix: division by 0 error
-
-        if (user.amount > 0) { // already deposited assets
-            uint256 pending = user.amount.mul(pool.accMakiPerShare).div(1e12).sub(user.rewardDebt);
-            if(pending > 0) { // sends pending rewards, if applicable
-                safeMakiTransfer(msg.sender, pending);
-            }
-        }
-
-        if (_amount > 0) { // if adding more
-            pool.lpToken.safeTransferFrom(address(msg.sender), address(this), _amount.sub(taxedAmount));
-            pool.lpToken.safeTransferFrom(address(msg.sender), address(treasury), taxedAmount);
-
-            user.amount = user.amount.add(_amount.sub(taxedAmount)); // new user.amount == untaxed amount
-        }
-        user.rewardDebt = user.amount.mul(pool.accMakiPerShare).div(1e12);
-        emit Deposit(msg.sender, _pid, _amount.sub(taxedAmount));
-    }
-
-    // WITHDRAW -- LP TOKENS -- STAKERS
-    function withdraw(uint256 _pid, uint256 _amount) public {
-
-        require (_pid != 0, 'withdraw MAKI by unstaking');
-        PoolInfo storage pool = poolInfo[_pid];
-        UserInfo storage user = userInfo[_pid][msg.sender];
-        require(user.amount >= _amount, "withdraw: not good");
-
-        updatePool(_pid);
-        uint256 pending = user.amount.mul(pool.accMakiPerShare).div(1e12).sub(user.rewardDebt);
-        if(pending > 0) {
-            safeMakiTransfer(msg.sender, pending);
-        }
-        if(_amount > 0) {
-            user.amount = user.amount.sub(_amount);
-            pool.lpToken.safeTransfer(address(msg.sender), _amount);
-        }
-        user.rewardDebt = user.amount.mul(pool.accMakiPerShare).div(1e12);
-        emit Withdraw(msg.sender, _pid, _amount);
-    }
-
-    // STAKE -- MAKI TO MASTERCHEF -- PUBLIC MAKI HOLDERS
-    function enterStaking(uint256 _amount) public {
-        PoolInfo storage pool = poolInfo[0];
-        UserInfo storage user = userInfo[0][msg.sender];
-        updatePool(0);
-        if (user.amount > 0) {
-            uint256 pending = user.amount.mul(pool.accMakiPerShare).div(1e12).sub(user.rewardDebt);
-            if(pending > 0) {
-                safeMakiTransfer(msg.sender, pending);
-            }
-        }
-        if(_amount > 0) {
-            pool.lpToken.safeTransferFrom(address(msg.sender), address(this), _amount);
-            user.amount = user.amount.add(_amount);
-        }
-        user.rewardDebt = user.amount.mul(pool.accMakiPerShare).div(1e12);
-
-        soy.mint(msg.sender, _amount);
-        emit Deposit(msg.sender, 0, _amount);
-    }
-
-    // WITHDRAW -- MAKI tokens from STAKING.
-    function leaveStaking(uint256 _amount) public {
-        PoolInfo storage pool = poolInfo[0];
-        UserInfo storage user = userInfo[0][msg.sender];
-        require(user.amount >= _amount, "withdraw: not good");
-        updatePool(0);
-        uint256 pending = user.amount.mul(pool.accMakiPerShare).div(1e12).sub(user.rewardDebt);
-        if(pending > 0) {
-            safeMakiTransfer(msg.sender, pending);
-        }
-        if(_amount > 0) {
-            user.amount = user.amount.sub(_amount);
-            pool.lpToken.safeTransfer(address(msg.sender), _amount);
-        }
-        user.rewardDebt = user.amount.mul(pool.accMakiPerShare).div(1e12);
-
-        soy.burn(msg.sender, _amount);
-        emit Withdraw(msg.sender, 0, _amount);
-    }
-
-    // TRANSFER -- TRANSFERS SOY -- INTERNAL
-    function safeMakiTransfer(address _to, uint256 _amount) internal {
-        soy.safeMakiTransfer(_to, _amount);
-    }
-
-    // UPDATE -- TREASURY ADDRESS -- TREASURY || ADMIN
-    function newTreasury(address _treasury) public {
-        require(msg.sender == treasury || msg.sender == admin, "treasury: invalid permissions");
-        treasury = _treasury;
-    }
-
-    // UPDATE -- ADMIN ADDRESS -- ADMIN
-    function newAdmin(address _admin) public {
-        require(msg.sender == admin, "admin: le who are you?");
-        admin = _admin;
     }
 }

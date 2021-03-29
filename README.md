@@ -3,9 +3,9 @@ This repository is designed as a container for the contracts that play the most 
 ___
 # Contracts for Audit
 ## Primary Exchange Contracts
-    -   MakiswapV2Factory.sol
-    -   MakiswapV2Router.sol
-    -   MakiswapV2Pair.sol
+    -   MakiswapFactory.sol
+    -   MakiswapRouter.sol
+    -   MakiswapPair.sol
 
 ## Primary Farm Contracts
     -   SoyBar.sol

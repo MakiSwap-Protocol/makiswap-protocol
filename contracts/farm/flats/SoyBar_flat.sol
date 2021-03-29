@@ -1,4 +1,6 @@
-// SPDX-License-Identifier: MIT and GPL-3.0-or-later
+// File: maki-swap-lib/contracts/GSN/Context.sol
+
+// SPDX-License-Identifier: MIT
 
 pragma solidity >=0.6.0 <0.8.0;
 
@@ -24,6 +26,8 @@ abstract contract Context {
 }
 
 // File: maki-swap-lib/contracts/access/Ownable.sol
+
+// SPDX-License-Identifier: GPL-3.0-or-later
 
 pragma solidity >=0.4.0;
 
@@ -100,6 +104,8 @@ contract Ownable is Context {
 }
 
 // File: maki-swap-lib/contracts/token/HRC20/IHRC20.sol
+
+// SPDX-License-Identifier: GPL-3.0-or-later
 
 pragma solidity >=0.4.0;
 
@@ -199,6 +205,8 @@ interface IHRC20 {
 }
 
 // File: maki-swap-lib/contracts/math/SafeMath.sol
+
+// SPDX-License-Identifier: MIT
 
 pragma solidity >=0.6.0 <0.8.0;
 
@@ -390,6 +398,8 @@ library SafeMath {
 
 // File: maki-swap-lib/contracts/utils/Address.sol
 
+// SPDX-License-Identifier: MIT
+
 pragma solidity ^0.6.2;
 
 /**
@@ -492,7 +502,7 @@ library Address {
      *
      * Requirements:
      *
-     * - the calling contract must have an HT balance of at least `value`.
+     * - the calling contract must have an ETH balance of at least `value`.
      * - the called Solidity function must be `payable`.
      *
      * _Available since v3.1._
@@ -551,6 +561,8 @@ library Address {
 }
 
 // File: maki-swap-lib/contracts/token/HRC20/HRC20.sol
+
+// SPDX-License-Identifier: MIT
 
 pragma solidity >=0.4.0;
 
@@ -871,7 +883,8 @@ contract HRC20 is Context, IHRC20, Ownable {
 
 // File: contracts/farm/MakiToken.sol
 
-pragma solidity 0.7.0;
+// SPDX-License-Identifier: MIT
+pragma solidity 0.6.12;
 
 
 // MakiToken with Governance.
@@ -1115,7 +1128,9 @@ contract MakiToken is HRC20('MakiSwap Token', 'Maki') {
 
 // File: contracts/farm/SoyBar.sol
 
-pragma solidity 0.7.0;
+// SPDX-License-Identifier: MIT
+
+pragma solidity ^0.6.12;
 
 
 

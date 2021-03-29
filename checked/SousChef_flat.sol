@@ -295,7 +295,7 @@ interface IHRC20 {
 
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.6.2;
+pragma solidity >=0.6.2;
 
 /**
  * @dev Collection of functions related to the address type
@@ -397,7 +397,7 @@ library Address {
      *
      * Requirements:
      *
-     * - the calling contract must have an HT balance of at least `value`.
+     * - the calling contract must have an ETH balance of at least `value`.
      * - the called Solidity function must be `payable`.
      *
      * _Available since v3.1._
@@ -560,7 +560,7 @@ library SafeHRC20 {
 
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.7.0;
+pragma solidity ^0.6.12;
 
 
 
