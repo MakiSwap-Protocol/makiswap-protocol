@@ -30,8 +30,7 @@ interface IMigratorChef {
 // Note that it's ownable and the owner wields tremendous power. The ownership
 // will be transferred to a governance smart contract once MAKI is sufficiently
 // distributed and the community can show to govern itself.
-//
-// Have fun reading it. Hopefully it's bug-free. God bless.
+
 contract MasterChef is Ownable {
     using SafeMath for uint256;
     using SafeHRC20 for IHRC20;
@@ -41,15 +40,15 @@ contract MasterChef is Ownable {
         uint256 amount;     // How many LP tokens the user has provided.
         uint256 rewardDebt; // Reward debt. See explanation below.
         //
-        // We do some fancy math here. Basically, any point in time, the amount of MAKIs
+        // We do some fancy math here. Basically, any point in time, the amount of MAKI
         // entitled to a user but is pending to be distributed is:
         //
-        //   pending reward = (user.amount * pool.accMakiPerShare) - user.rewardDebt
+        //   pending reward = (user.amount * pool.accMakiPerShare) - user.rewardDebt - user.taxedAmount
         //
         // Whenever a user deposits or withdraws LP tokens to a pool. Here's what happens:
         //   1. The pool's `accMakiPerShare` (and `lastRewardBlock`) gets updated.
         //   2. User receives the pending reward sent to his/her address.
-        //   3. User's `amount` gets updated.
+        //   3. User's `amount` gets updated and taxed by 'taxedAmount'.
         //   4. User's `rewardDebt` gets updated.
     }
 
@@ -57,46 +56,53 @@ contract MasterChef is Ownable {
     struct PoolInfo {
         IHRC20 lpToken;           // Address of LP token contract.
         uint256 allocPoint;       // How many allocation points assigned to this pool. MAKIs to distribute per block.
+        uint256 taxRate;          // Rate at which the LP token deposit is taxed.
         uint256 lastRewardBlock;  // Last block number that MAKIs distribution occurs.
         uint256 accMakiPerShare; // Accumulated MAKIs per share, times 1e12. See below.
     }
+
+
+    //** ADDRESSES **//
 
     // The MAKI TOKEN!
     MakiToken public maki;
     // The SOY TOKEN!
     SoyBar public soy;
-    // Deployer sets to contract admin as self
-    address public admin = msg.sender;
-    // Dev address (mutable by owner and dev)
+    // Admin address, which recieves 1.5 MAKI per block (mutable by admin)
+    address public admin;
+    // Treasury address, which recieves 1.5 MAKI per block (mutable by admin and dev)
     address public treasury;
-    // Burn address (mutable by owner-only)
-    address public burnaddr;
+    // The migrator contract. It has a lot of power. Can only be set through governance (owner).
+    IMigratorChef public migrator;
+
+
+    // ** GLOBAL VARIABLES ** //
+
     // MAKI tokens created per block.
     uint256 public makiPerBlock;
     // Bonus muliplier for early maki makers.
     uint256 public BONUS_MULTIPLIER = 1;
-    // The migrator contract. It has a lot of power. Can only be set through governance (owner).
-    IMigratorChef public migrator;
+    // The block number when MAKI mining starts.
+    uint256 public startBlock;
+    // Total allocation points. Must be the sum of all allocation points in all pools.
+    uint256 public totalAllocPoint = 0;
+    
+
+    // ** POOL VARIABLES ** //
 
     // Info of each pool.
     PoolInfo[] public poolInfo;
     // Info of each user that stakes LP tokens.
     mapping (uint256 => mapping (address => UserInfo)) public userInfo;
-    // Total allocation points. Must be the sum of all allocation points in all pools.
-    uint256 public totalAllocPoint = 0;
-    // The block number when MAKI mining starts.
-    uint256 public startBlock;
 
     event Deposit(address indexed user, uint256 indexed pid, uint256 amount);
     event Withdraw(address indexed user, uint256 indexed pid, uint256 amount);
-    event EmergencyWithdraw(address indexed user, uint256 indexed pid, uint256 amount);
 
     constructor(
         MakiToken _maki,
         SoyBar _soy,
         address _admin,
         address _treasury,
-        address _burnaddr,
         uint256 _makiPerBlock,
         uint256 _startBlock
     ) public {
@@ -104,7 +110,6 @@ contract MasterChef is Ownable {
         soy = _soy;
         admin = _admin;
         treasury = _treasury;
-        burnaddr = _burnaddr;
         makiPerBlock = _makiPerBlock;
         startBlock = _startBlock;
 
@@ -112,6 +117,7 @@ contract MasterChef is Ownable {
         poolInfo.push(PoolInfo({
             lpToken: _maki,
             allocPoint: 1000,
+            taxRate: 0,
             lastRewardBlock: startBlock,
             accMakiPerShare: 0
         }));
@@ -128,9 +134,16 @@ contract MasterChef is Ownable {
         return poolInfo.length;
     }
 
-    // Add a new lp to the pool. Can only be called by the owner.
-    // XXX DO NOT add the same LP token more than once. Rewards will be messed up if you do.
-    function add(uint256 _allocPoint, IHRC20 _lpToken, bool _withUpdate) public onlyOwner {
+    // VALIDATION -- ELIMINATES POOL DUPLICATION RISK -- NONE
+    function checkPoolDuplicate(IHRC20 _token) public view {
+        uint256 length = poolInfo.length;
+        for (uint256 pid = 0; pid < length; ++pid) {
+            require(poolInfo[pid].lpToken != _token, "add: existing pool?");
+        }
+    }
+
+    // ADD -- NEW LP TOKEN POOL -- OWNER
+    function add(uint256 _allocPoint, IHRC20 _lpToken, uint256 _taxRate, bool _withUpdate) public onlyOwner {
         if (_withUpdate) {
             massUpdatePools();
         }
@@ -139,13 +152,14 @@ contract MasterChef is Ownable {
         poolInfo.push(PoolInfo({
             lpToken: _lpToken,
             allocPoint: _allocPoint,
+            taxRate: _taxRate,
             lastRewardBlock: lastRewardBlock,
             accMakiPerShare: 0
         }));
         updateStakingPool();
     }
 
-    // Update the given pool's MAKI allocation point. Can only be called by the owner.
+    // UPDATE -- ALLOCATION POINT -- OWNER
     function set(uint256 _pid, uint256 _allocPoint, bool _withUpdate) public onlyOwner {
         if (_withUpdate) {
             massUpdatePools();
@@ -158,6 +172,7 @@ contract MasterChef is Ownable {
         }
     }
 
+    // UPDATE -- STAKING POOL -- INTERNAL
     function updateStakingPool() internal {
         uint256 length = poolInfo.length;
         uint256 points = 0;
@@ -171,12 +186,12 @@ contract MasterChef is Ownable {
         }
     }
 
-    // Set the migrator contract. Can only be called by the owner.
+    // SET -- MIGRATOR CONTRACT -- OWNER
     function setMigrator(IMigratorChef _migrator) public onlyOwner {
         migrator = _migrator;
     }
 
-    // Migrate lp token to another lp contract. Can be called by anyone. We trust that migrator contract is good.
+    // MIGRATE -- LP TOKENS TO ANOTHER CONTRACT -- MIGRATOR
     function migrate(uint256 _pid) public {
         require(address(migrator) != address(0), "migrate: no migrator");
         PoolInfo storage pool = poolInfo[_pid];
@@ -188,12 +203,12 @@ contract MasterChef is Ownable {
         pool.lpToken = newLpToken;
     }
 
-    // Return reward multiplier over the given _from to _to block.
+    // VIEW -- BONUS MULTIPLIER -- PUBLIC
     function getMultiplier(uint256 _from, uint256 _to) public view returns (uint256) {
         return _to.sub(_from).mul(BONUS_MULTIPLIER);
     }
 
-    // View function to see pending MAKIs on frontend.
+    // VIEW -- PENDING MAKI
     function pendingMaki(uint256 _pid, address _user) external view returns (uint256) {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][_user];
@@ -207,7 +222,7 @@ contract MasterChef is Ownable {
         return user.amount.mul(accMakiPerShare).div(1e12).sub(user.rewardDebt);
     }
 
-    // Update reward variables for all pools. Be careful of gas spending!
+    // UPDATE -- REWARD VARIABLES FOR ALL POOLS (HIGH GAS POSSIBLE) -- PUBLIC
     function massUpdatePools() public {
         uint256 length = poolInfo.length;
         for (uint256 pid = 0; pid < length; ++pid) {
@@ -216,7 +231,7 @@ contract MasterChef is Ownable {
     }
 
 
-    // Update reward variables of the given pool to be up-to-date.
+    // UPDATE -- REWARD VARIABLES (POOL) -- PUBLIC
     function updatePool(uint256 _pid) public {
         PoolInfo storage pool = poolInfo[_pid];
         if (block.number <= pool.lastRewardBlock) {
@@ -228,14 +243,21 @@ contract MasterChef is Ownable {
             return;
         }
         uint256 multiplier = getMultiplier(pool.lastRewardBlock, block.number);
-        uint256 makiReward = multiplier.mul(makiPerBlock).mul(pool.allocPoint).div(totalAllocPoint);
-        maki.mint(treasury, makiReward.div(10));
+        uint256 makiReward = 
+            multiplier.mul(makiPerBlock).mul(pool.allocPoint).div(totalAllocPoint);
+
+        maki.mint(admin, makiReward.mul(15).div(130)); // 1.5 MAKI per block to admin
+        maki.mint(treasury, makiReward.mul(15).div(130)); // 1.5 MAKI per block to treasury
+        
         maki.mint(address(soy), makiReward);
-        pool.accMakiPerShare = pool.accMakiPerShare.add(makiReward.mul(1e12).div(lpSupply));
+
+        pool.accMakiPerShare = pool.accMakiPerShare.add(
+            makiReward.mul(1e12).div(lpSupply));
+
         pool.lastRewardBlock = block.number;
     }
 
-    // Deposit LP tokens to MasterChef for MAKI allocation.
+    // DEPOSIT -- LP TOKENS -- LP OWNERS
     function deposit(uint256 _pid, uint256 _amount) public {
 
         require (_pid != 0, 'deposit MAKI by staking');
@@ -243,21 +265,26 @@ contract MasterChef is Ownable {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
         updatePool(_pid);
-        if (user.amount > 0) {
+        uint256 taxedAmount = pool.taxRate == 0 ? 0 : _amount.div(pool.taxRate); // fix: division by 0 error
+
+        if (user.amount > 0) { // already deposited assets
             uint256 pending = user.amount.mul(pool.accMakiPerShare).div(1e12).sub(user.rewardDebt);
-            if(pending > 0) {
+            if(pending > 0) { // sends pending rewards, if applicable
                 safeMakiTransfer(msg.sender, pending);
             }
         }
-        if (_amount > 0) {
-            pool.lpToken.safeTransferFrom(address(msg.sender), address(this), _amount);
-            user.amount = user.amount.add(_amount);
+
+        if (_amount > 0) { // if adding more
+            pool.lpToken.safeTransferFrom(address(msg.sender), address(this), _amount.sub(taxedAmount));
+            pool.lpToken.safeTransferFrom(address(msg.sender), address(treasury), taxedAmount);
+
+            user.amount = user.amount.add(_amount.sub(taxedAmount)); // new user.amount == untaxed amount
         }
         user.rewardDebt = user.amount.mul(pool.accMakiPerShare).div(1e12);
-        emit Deposit(msg.sender, _pid, _amount);
+        emit Deposit(msg.sender, _pid, _amount.sub(taxedAmount));
     }
 
-    // Withdraw LP tokens from MasterChef.
+    // WITHDRAW -- LP TOKENS -- STAKERS
     function withdraw(uint256 _pid, uint256 _amount) public {
 
         require (_pid != 0, 'withdraw MAKI by unstaking');
@@ -278,7 +305,7 @@ contract MasterChef is Ownable {
         emit Withdraw(msg.sender, _pid, _amount);
     }
 
-    // Stake MAKI tokens to MasterChef
+    // STAKE -- MAKI TO MASTERCHEF -- PUBLIC MAKI HOLDERS
     function enterStaking(uint256 _amount) public {
         PoolInfo storage pool = poolInfo[0];
         UserInfo storage user = userInfo[0][msg.sender];
@@ -299,7 +326,7 @@ contract MasterChef is Ownable {
         emit Deposit(msg.sender, 0, _amount);
     }
 
-    // Withdraw MAKI tokens from STAKING.
+    // WITHDRAW -- MAKI tokens from STAKING.
     function leaveStaking(uint256 _amount) public {
         PoolInfo storage pool = poolInfo[0];
         UserInfo storage user = userInfo[0][msg.sender];
@@ -319,36 +346,20 @@ contract MasterChef is Ownable {
         emit Withdraw(msg.sender, 0, _amount);
     }
 
-    // Withdraw without caring about rewards. EMERGENCY ONLY.
-    function emergencyWithdraw(uint256 _pid) public {
-        PoolInfo storage pool = poolInfo[_pid];
-        UserInfo storage user = userInfo[_pid][msg.sender];
-        pool.lpToken.safeTransfer(address(msg.sender), user.amount);
-        emit EmergencyWithdraw(msg.sender, _pid, user.amount);
-        user.amount = 0;
-        user.rewardDebt = 0;
-    }
-
-    // Safe maki transfer function, just in case if rounding error causes pool to not have enough MAKIs.
+    // TRANSFER -- TRANSFERS SOY -- INTERNAL
     function safeMakiTransfer(address _to, uint256 _amount) internal {
         soy.safeMakiTransfer(_to, _amount);
     }
 
-    // Update treasury address by the previous treasury (or the admin).
+    // UPDATE -- TREASURY ADDRESS -- TREASURY || ADMIN
     function newTreasury(address _treasury) public {
-        require(msg.sender == treasury || msg.sender == admin, "treasurawr: huh?");
+        require(msg.sender == treasury || msg.sender == admin, "treasury: invalid permissions");
         treasury = _treasury;
     }
 
-    // Update admin address by the previous admin.
+    // UPDATE -- ADMIN ADDRESS -- ADMIN
     function newAdmin(address _admin) public {
-        require(msg.sender == admin, "owner: le wut?");
+        require(msg.sender == admin, "admin: le who are you?");
         admin = _admin;
-    }
-
-    // Update burn address by the treasury (or the admin).
-    function newBurner(address _burnaddr) public {
-        require(msg.sender == treasury || msg.sender == admin, "burn: who?");
-        burnaddr = _burnaddr;
     }
 }
