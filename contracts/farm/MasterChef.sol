@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity >=0.5.16;
+pragma solidity 0.6.12;
 
 import 'maki-swap-lib/contracts/math/SafeMath.sol';
 import 'maki-swap-lib/contracts/token/HRC20/IHRC20.sol';
@@ -9,21 +9,7 @@ import 'maki-swap-lib/contracts/access/Ownable.sol';
 
 import "./MakiToken.sol";
 import "./SoyBar.sol";
-
-// import "@nomiclabs/buidler/console.sol";
-
-interface IMigratorChef {
-    // Perform LP token migration from legacy MakiSwap.
-    // Take the current LP token address and return the new LP token address.
-    // Migrator should have full access to the caller's LP token.
-    // Return the new LP token address.
-    //
-    // XXX Migrator must have allowance access to MakiSwap LP tokens.
-    // MakiSwap must mint EXACTLY the same amount of Maki LP tokens or
-    // else something bad will happen. Traditional MakiSwap does not
-    // do that so be careful!
-    function migrate(IHRC20 token) external returns (IHRC20);
-}
+import './interfaces/IMigratorChef.sol';
 
 // MasterChef is the master of Maki. She can make Maki and she is a fair lady.
 //
@@ -43,12 +29,12 @@ contract MasterChef is Ownable {
         // We do some fancy math here. Basically, any point in time, the amount of MAKI
         // entitled to a user but is pending to be distributed is:
         //
-        //   pending reward = (user.amount * pool.accMakiPerShare) - user.rewardDebt - user.taxedAmount
+        //   pending reward = (user.amount * pool.accMakiPerShare) - user.rewardDebt
         //
         // Whenever a user deposits or withdraws LP tokens to a pool. Here's what happens:
         //   1. The pool's `accMakiPerShare` (and `lastRewardBlock`) gets updated.
         //   2. User receives the pending reward sent to his/her address.
-        //   3. User's `amount` gets updated and taxed by 'taxedAmount'.
+        //   3. User's `amount` gets updated
         //   4. User's `rewardDebt` gets updated.
     }
 
@@ -56,7 +42,6 @@ contract MasterChef is Ownable {
     struct PoolInfo {
         IHRC20 lpToken;           // Address of LP token contract.
         uint256 allocPoint;       // How many allocation points assigned to this pool. MAKIs to distribute per block.
-        uint256 taxRate;          // Rate at which the LP token deposit is taxed.
         uint256 lastRewardBlock;  // Last block number that MAKIs distribution occurs.
         uint256 accMakiPerShare; // Accumulated MAKIs per share, times 1e12. See below.
     }
@@ -117,7 +102,6 @@ contract MasterChef is Ownable {
         poolInfo.push(PoolInfo({
             lpToken: _maki,
             allocPoint: 1000,
-            taxRate: 0,
             lastRewardBlock: startBlock,
             accMakiPerShare: 0
         }));
@@ -143,7 +127,7 @@ contract MasterChef is Ownable {
     }
 
     // ADD -- NEW LP TOKEN POOL -- OWNER
-    function add(uint256 _allocPoint, IHRC20 _lpToken, uint256 _taxRate, bool _withUpdate) public onlyOwner {
+    function add(uint256 _allocPoint, IHRC20 _lpToken, bool _withUpdate) public onlyOwner {
         if (_withUpdate) {
             massUpdatePools();
         }
@@ -152,7 +136,6 @@ contract MasterChef is Ownable {
         poolInfo.push(PoolInfo({
             lpToken: _lpToken,
             allocPoint: _allocPoint,
-            taxRate: _taxRate,
             lastRewardBlock: lastRewardBlock,
             accMakiPerShare: 0
         }));
@@ -265,7 +248,6 @@ contract MasterChef is Ownable {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
         updatePool(_pid);
-        uint256 taxedAmount = pool.taxRate == 0 ? 0 : _amount.div(pool.taxRate); // fix: division by 0 error
 
         if (user.amount > 0) { // already deposited assets
             uint256 pending = user.amount.mul(pool.accMakiPerShare).div(1e12).sub(user.rewardDebt);
@@ -275,13 +257,11 @@ contract MasterChef is Ownable {
         }
 
         if (_amount > 0) { // if adding more
-            pool.lpToken.safeTransferFrom(address(msg.sender), address(this), _amount.sub(taxedAmount));
-            pool.lpToken.safeTransferFrom(address(msg.sender), address(treasury), taxedAmount);
-
-            user.amount = user.amount.add(_amount.sub(taxedAmount)); // new user.amount == untaxed amount
+            pool.lpToken.safeTransferFrom(address(msg.sender), address(this), _amount);
+            user.amount = user.amount.add(_amount);
         }
         user.rewardDebt = user.amount.mul(pool.accMakiPerShare).div(1e12);
-        emit Deposit(msg.sender, _pid, _amount.sub(taxedAmount));
+        emit Deposit(msg.sender, _pid, _amount);
     }
 
     // WITHDRAW -- LP TOKENS -- STAKERS

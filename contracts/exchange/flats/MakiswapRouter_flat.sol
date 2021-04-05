@@ -23,8 +23,6 @@ interface IMakiswapFactory {
 
 // File: contracts/exchange/utils/TransferHelper.sol
 
-// SPDX-License-Identifier: GPL-3.0-or-later
-
 pragma solidity >=0.5.0;
 
 // helper methods for interacting with HRC20 tokens and sending ETH that do not consistently return true/false
@@ -170,8 +168,6 @@ interface IMakiswapRouter01 {
 
 // File: contracts/exchange/interfaces/IMakiswapRouter02.sol
 
-// SPDX-License-Identifier: MIT
-
 pragma solidity >=0.5.16;
 
 // import 'maki-swap-periphery/contracts/IMakiswapRouter02.sol';
@@ -276,8 +272,6 @@ interface IMakiswapPair {
 }
 
 // File: contracts/exchange/libraries/SafeMath.sol
-
-// SPDX-License-Identifier: MIT
 
 pragma solidity >=0.5.0 <0.8.0;
 
@@ -471,8 +465,6 @@ library SafeMath {
 
 // File: contracts/exchange/libraries/MakiswapLibrary.sol
 
-// SPDX-License-Identifier: MIT
-
 pragma solidity >=0.5.0;
 
 //** LOCAL IMPORTS **//
@@ -564,7 +556,6 @@ library MakiswapLibrary {
 
 // File: contracts/exchange/interfaces/IHRC20.sol
 
-// SPDX-License-Identifier: MIT
 
 // import 'maki-swap-lib/contracts/token/HRC20/IHRC20.sol';
 
@@ -588,9 +579,7 @@ interface IHRC20 {
 
 // File: contracts/exchange/interfaces/IWHT.sol
 
-// SPDX-License-Identifier: MIT
-
-pragma solidity =0.5.16;
+pragma solidity >=0.5.16;
 
 // import 'maki-swap-periphery/contracts/interfaces/IWHT.sol';
 
@@ -601,8 +590,6 @@ interface IWHT {
 }
 
 // File: contracts/exchange/MakiswapRouter.sol
-
-// SPDX-License-Identifier: MIT
 
 pragma solidity >=0.6.6;
 
