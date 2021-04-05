@@ -192,8 +192,6 @@ library SafeMath {
 
 // File: maki-swap-lib/contracts/token/HRC20/IHRC20.sol
 
-// SPDX-License-Identifier: GPL-3.0-or-later
-
 pragma solidity >=0.4.0;
 
 interface IHRC20 {
@@ -293,9 +291,7 @@ interface IHRC20 {
 
 // File: maki-swap-lib/contracts/utils/Address.sol
 
-// SPDX-License-Identifier: MIT
-
-pragma solidity ^0.6.2;
+pragma solidity >=0.6.2;
 
 /**
  * @dev Collection of functions related to the address type
@@ -457,8 +453,6 @@ library Address {
 
 // File: maki-swap-lib/contracts/token/HRC20/SafeHRC20.sol
 
-// SPDX-License-Identifier: MIT
-
 pragma solidity >=0.6.0 <0.8.0;
 
 
@@ -558,8 +552,6 @@ library SafeHRC20 {
 
 // File: maki-swap-lib/contracts/GSN/Context.sol
 
-// SPDX-License-Identifier: MIT
-
 pragma solidity >=0.6.0 <0.8.0;
 
 /*
@@ -584,8 +576,6 @@ abstract contract Context {
 }
 
 // File: maki-swap-lib/contracts/access/Ownable.sol
-
-// SPDX-License-Identifier: GPL-3.0-or-later
 
 pragma solidity >=0.4.0;
 
@@ -662,8 +652,6 @@ contract Ownable is Context {
 }
 
 // File: maki-swap-lib/contracts/token/HRC20/HRC20.sol
-
-// SPDX-License-Identifier: MIT
 
 pragma solidity >=0.4.0;
 
@@ -984,12 +972,11 @@ contract HRC20 is Context, IHRC20, Ownable {
 
 // File: contracts/farm/MakiToken.sol
 
-// SPDX-License-Identifier: MIT
 pragma solidity 0.6.12;
 
 
 // MakiToken with Governance.
-contract MakiToken is HRC20('MakiSwap Token', 'Maki') {
+contract MakiToken is HRC20('MakiSwap Token', 'MAKI') {
     /// @dev Creates `_amount` token to `_to`. Must only be called by the owner (MasterChef).
     function mint(address _to, uint256 _amount) public onlyOwner {
         _mint(_to, _amount);
@@ -1229,9 +1216,7 @@ contract MakiToken is HRC20('MakiSwap Token', 'Maki') {
 
 // File: contracts/farm/SoyBar.sol
 
-// SPDX-License-Identifier: MIT
-
-pragma solidity ^0.6.12;
+pragma solidity 0.6.12;
 
 
 
@@ -1499,19 +1484,10 @@ contract SoyBar is HRC20('SoyBar Token', 'SOY') {
     }
 }
 
-// File: contracts/farm/MasterChef.sol
-
-// SPDX-License-Identifier: MIT
-
-pragma solidity >=0.5.16;
+// File: contracts/farm/interfaces/IMigratorChef.sol
 
 
-
-
-
-
-
-// import "@nomiclabs/buidler/console.sol";
+pragma solidity 0.6.12;
 
 interface IMigratorChef {
     // Perform LP token migration from legacy MakiSwap.
@@ -1525,6 +1501,10 @@ interface IMigratorChef {
     // do that so be careful!
     function migrate(IHRC20 token) external returns (IHRC20);
 }
+
+// File: contracts/farm/MasterChef.sol
+
+pragma solidity 0.6.12;
 
 // MasterChef is the master of Maki. She can make Maki and she is a fair lady.
 //
@@ -1544,12 +1524,12 @@ contract MasterChef is Ownable {
         // We do some fancy math here. Basically, any point in time, the amount of MAKI
         // entitled to a user but is pending to be distributed is:
         //
-        //   pending reward = (user.amount * pool.accMakiPerShare) - user.rewardDebt - user.taxedAmount
+        //   pending reward = (user.amount * pool.accMakiPerShare) - user.rewardDebt
         //
         // Whenever a user deposits or withdraws LP tokens to a pool. Here's what happens:
         //   1. The pool's `accMakiPerShare` (and `lastRewardBlock`) gets updated.
         //   2. User receives the pending reward sent to his/her address.
-        //   3. User's `amount` gets updated and taxed by 'taxedAmount'.
+        //   3. User's `amount` gets updated
         //   4. User's `rewardDebt` gets updated.
     }
 
@@ -1557,7 +1537,6 @@ contract MasterChef is Ownable {
     struct PoolInfo {
         IHRC20 lpToken;           // Address of LP token contract.
         uint256 allocPoint;       // How many allocation points assigned to this pool. MAKIs to distribute per block.
-        uint256 taxRate;          // Rate at which the LP token deposit is taxed.
         uint256 lastRewardBlock;  // Last block number that MAKIs distribution occurs.
         uint256 accMakiPerShare; // Accumulated MAKIs per share, times 1e12. See below.
     }
@@ -1618,7 +1597,6 @@ contract MasterChef is Ownable {
         poolInfo.push(PoolInfo({
             lpToken: _maki,
             allocPoint: 1000,
-            taxRate: 0,
             lastRewardBlock: startBlock,
             accMakiPerShare: 0
         }));
@@ -1644,7 +1622,7 @@ contract MasterChef is Ownable {
     }
 
     // ADD -- NEW LP TOKEN POOL -- OWNER
-    function add(uint256 _allocPoint, IHRC20 _lpToken, uint256 _taxRate, bool _withUpdate) public onlyOwner {
+    function add(uint256 _allocPoint, IHRC20 _lpToken, bool _withUpdate) public onlyOwner {
         if (_withUpdate) {
             massUpdatePools();
         }
@@ -1653,7 +1631,6 @@ contract MasterChef is Ownable {
         poolInfo.push(PoolInfo({
             lpToken: _lpToken,
             allocPoint: _allocPoint,
-            taxRate: _taxRate,
             lastRewardBlock: lastRewardBlock,
             accMakiPerShare: 0
         }));
@@ -1766,7 +1743,6 @@ contract MasterChef is Ownable {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
         updatePool(_pid);
-        uint256 taxedAmount = pool.taxRate == 0 ? 0 : _amount.div(pool.taxRate); // fix: division by 0 error
 
         if (user.amount > 0) { // already deposited assets
             uint256 pending = user.amount.mul(pool.accMakiPerShare).div(1e12).sub(user.rewardDebt);
@@ -1776,13 +1752,11 @@ contract MasterChef is Ownable {
         }
 
         if (_amount > 0) { // if adding more
-            pool.lpToken.safeTransferFrom(address(msg.sender), address(this), _amount.sub(taxedAmount));
-            pool.lpToken.safeTransferFrom(address(msg.sender), address(treasury), taxedAmount);
-
-            user.amount = user.amount.add(_amount.sub(taxedAmount)); // new user.amount == untaxed amount
+            pool.lpToken.safeTransferFrom(address(msg.sender), address(this), _amount);
+            user.amount = user.amount.add(_amount);
         }
         user.rewardDebt = user.amount.mul(pool.accMakiPerShare).div(1e12);
-        emit Deposit(msg.sender, _pid, _amount.sub(taxedAmount));
+        emit Deposit(msg.sender, _pid, _amount);
     }
 
     // WITHDRAW -- LP TOKENS -- STAKERS

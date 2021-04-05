@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity >=0.5.6;
+pragma solidity >=0.5.12;
 
 //* LOCAL IMPORTS ONLY **//
 import './interfaces/IMakiswapHRC20.sol';
@@ -23,7 +23,7 @@ contract MakiswapHRC20 is IMakiswapHRC20 {
     // event Approval(address indexed owner, address indexed spender, uint value);
     // event Transfer(address indexed from, address indexed to, uint value);
 
-    constructor() {
+    constructor() public {
         uint chainId;
         assembly {
             chainId := chainid()

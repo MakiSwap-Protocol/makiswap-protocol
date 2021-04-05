@@ -4,7 +4,7 @@ pragma solidity 0.6.12;
 import "maki-swap-lib/contracts/token/HRC20/HRC20.sol";
 
 // MakiToken with Governance.
-contract MakiToken is HRC20('MakiSwap Token', 'Maki') {
+contract MakiToken is HRC20('MakiSwap Token', 'MAKI') {
     /// @dev Creates `_amount` token to `_to`. Must only be called by the owner (MasterChef).
     function mint(address _to, uint256 _amount) public onlyOwner {
         _mint(_to, _amount);

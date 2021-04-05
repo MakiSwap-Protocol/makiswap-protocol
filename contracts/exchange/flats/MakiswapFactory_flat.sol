@@ -21,8 +21,6 @@ interface IMakiswapFactory {
 
 // File: makiswap-core/contracts/interfaces/IMakiswapHRC20.sol
 
-// SPDX-License-Identifier: MIT
-
 pragma solidity >=0.5.0;
 
 interface IMakiswapHRC20 {
@@ -49,8 +47,6 @@ interface IMakiswapHRC20 {
 
 // File: makiswap-core/contracts/libraries/SafeMath.sol
 
-// SPDX-License-Identifier: MIT
-
 pragma solidity >=0.5.16;
 
 // a library for performing overflow-safe math, courtesy of DappHub (https://github.com/dapphub/ds-math)
@@ -70,8 +66,6 @@ library SafeMath {
 }
 
 // File: makiswap-core/contracts/MakiswapHRC20.sol
-
-// SPDX-License-Identifier: MIT
 
 pragma solidity >=0.5.16;
 
@@ -168,8 +162,6 @@ contract MakiswapHRC20 is IMakiswapHRC20 {
 
 // File: makiswap-core/contracts/libraries/UQ112x112.sol
 
-// SPDX-License-Identifier: MIT
-
 pragma solidity >=0.5.16;
 
 // a library for handling binary fixed point numbers (https://en.wikipedia.org/wiki/Q_(number_format))
@@ -193,8 +185,6 @@ library UQ112x112 {
 
 // File: contracts/exchange/interfaces/IMakiswapCallee.sol
 
-// SPDX-License-Identifier: MIT
-
 pragma solidity >=0.5.0;
 
 interface IMakiswapCallee {
@@ -206,8 +196,6 @@ interface IMakiswapCallee {
 }
 
 // File: contracts/exchange/interfaces/IHRC20.sol
-
-// SPDX-License-Identifier: MIT
 
 // import 'maki-swap-lib/contracts/token/HRC20/IHRC20.sol';
 
@@ -230,8 +218,6 @@ interface IHRC20 {
 }
 
 // File: contracts/exchange/libraries/Math.sol
-
-// SPDX-License-Identifier: MIT
 
 pragma solidity >=0.5.6;
 
@@ -260,8 +246,6 @@ library Math {
 }
 
 // File: contracts/exchange/MakiswapPair.sol
-
-// SPDX-License-Identifier: MIT
 
 pragma solidity >=0.5.16;
 
@@ -486,18 +470,12 @@ contract MakiswapPair is MakiswapHRC20 {
 
 // File: contracts/exchange/MakiswapFactory.sol
 
-// SPDX-License-Identifier: MIT
-
 pragma solidity >=0.5.16;
 
 // ** GLOBAL IMPORTS ** //
 // import 'makiswap-core/contracts/interfaces/IMakiswapFactory.sol';
 
 // ** LOCAL IMPORTS ** //
-
-
-
-
 
 contract MakiswapFactory is IMakiswapFactory {
     address public override feeTo;

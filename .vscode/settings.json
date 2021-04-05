@@ -1,3 +1,6 @@
-// {
+{
+    "solidity.compileUsingRemoteVersion": "v0.5.17+commit.d19bba13",
+    "solidity.defaultCompiler": "remote"
+} // {
 //     "solidity.compileUsingRemoteVersion": "v0.5.16+commit.9c3226ce"
 // }
