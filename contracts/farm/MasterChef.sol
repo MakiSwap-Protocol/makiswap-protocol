@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.6.12;
+pragma solidity =0.6.12;
 
 import 'maki-swap-lib/contracts/math/SafeMath.sol';
 import 'maki-swap-lib/contracts/token/HRC20/IHRC20.sol';
@@ -9,7 +9,19 @@ import 'maki-swap-lib/contracts/access/Ownable.sol';
 
 import "./MakiToken.sol";
 import "./SoyBar.sol";
-import './interfaces/IMigratorChef.sol';
+
+interface IMigratorChef {
+    // Perform LP token migration from legacy MakiSwap.
+    // Take the current LP token address and return the new LP token address.
+    // Migrator should have full access to the caller's LP token.
+    // Return the new LP token address.
+    //
+    // XXX Migrator must have allowance access to MakiSwap LP tokens.
+    // MakiSwap must mint EXACTLY the same amount of Maki LP tokens or
+    // else something bad will happen. Traditional MakiSwap does not
+    // do that so be careful!
+    function migrate(IHRC20 token) external returns (IHRC20);
+}
 
 // MasterChef is the master of Maki. She can make Maki and she is a fair lady.
 //

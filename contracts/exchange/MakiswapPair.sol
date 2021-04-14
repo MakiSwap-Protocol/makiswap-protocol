@@ -1,22 +1,15 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.5.17;
+pragma solidity =0.5.16;
 
-/* GLOBAL IMPORTS */
 import "makiswap-core/contracts/MakiswapHRC20.sol";
-// import 'makiswap-core/contracts/libraries/Math.sol';
-// import 'makiswap-core/contracts/interfaces/IMakiswapCallee.sol';
-
+import "makiswap-core/contracts/libraries/Math.sol";
+import "makiswap-core/contracts/interfaces/IMakiswapCallee.sol";
+import "makiswap-core/contracts/interfaces/IMakiswapFactory.sol";
+import "maki-swap-lib/contracts/token/HRC20/IHRC20.sol";
+import "maki-swap-lib/contracts/token/HRC20/HRC20.sol";
+import "maki-swap-lib/contracts/math/SafeMath.sol";
 import "makiswap-core/contracts/libraries/UQ112x112.sol";
-import "./interfaces/IMakiswapFactory.sol";
-
-/* LOCAL IMPORTS */
-// import 'maki-swap-lib/contracts/token/HRC20/HRC20.sol';
-import "./interfaces/IMakiswapCallee.sol";
-import "./interfaces/IHRC20.sol";
-import "./libraries/Math.sol";
-
-// import './libraries/SafeMath.sol';
 
 interface IMigrator {
     // Return the desired amount of liquidity token that the migrator wants.
@@ -159,43 +152,53 @@ contract MakiswapPair is MakiswapHRC20 {
     }
 
     // this low-level function should be called from a contract which performs important safety checks
-    function mint(address to) external lock returns (uint liquidity) {
-        (uint112 _reserve0, uint112 _reserve1,) = getReserves(); // gas savings
-        uint balance0 = IHRC20(token0).balanceOf(address(this));
-        uint balance1 = IHRC20(token1).balanceOf(address(this));
-        uint amount0 = balance0.sub(_reserve0);
-        uint amount1 = balance1.sub(_reserve1);
+    function mint(address to) external lock returns (uint256 liquidity) {
+        (uint112 _reserve0, uint112 _reserve1, ) = getReserves(); // gas savings
+        uint256 balance0 = IHRC20(token0).balanceOf(address(this));
+        uint256 balance1 = IHRC20(token1).balanceOf(address(this));
+        uint256 amount0 = balance0.sub(_reserve0);
+        uint256 amount1 = balance1.sub(_reserve1);
 
         bool feeOn = _mintFee(_reserve0, _reserve1);
-        uint _totalSupply = totalSupply; // gas savings, must be defined here since totalSupply can update in _mintFee
+        uint256 _totalSupply = totalSupply; // gas savings, must be defined here since totalSupply can update in _mintFee
         if (_totalSupply == 0) {
             liquidity = Math.sqrt(amount0.mul(amount1)).sub(MINIMUM_LIQUIDITY);
-           _mint(address(0), MINIMUM_LIQUIDITY); // permanently lock the first MINIMUM_LIQUIDITY tokens
+            _mint(address(0), MINIMUM_LIQUIDITY); // permanently lock the first MINIMUM_LIQUIDITY tokens
         } else {
-            liquidity = Math.min(amount0.mul(_totalSupply) / _reserve0, amount1.mul(_totalSupply) / _reserve1);
+            liquidity = Math.min(
+                amount0.mul(_totalSupply) / _reserve0,
+                amount1.mul(_totalSupply) / _reserve1
+            );
         }
-        require(liquidity > 0, 'Makiswap: INSUFFICIENT_LIQUIDITY_MINTED');
+        require(liquidity > 0, "Makiswap: INSUFFICIENT_LIQUIDITY_MINTED");
         _mint(to, liquidity);
 
         _update(balance0, balance1, _reserve0, _reserve1);
-        if (feeOn) kLast = uint(reserve0).mul(reserve1); // reserve0 and reserve1 are up-to-date
+        if (feeOn) kLast = uint256(reserve0).mul(reserve1); // reserve0 and reserve1 are up-to-date
         emit Mint(msg.sender, amount0, amount1);
     }
 
     // this low-level function should be called from a contract which performs important safety checks
-    function burn(address to) external lock returns (uint amount0, uint amount1) {
-        (uint112 _reserve0, uint112 _reserve1,) = getReserves(); // gas savings
-        address _token0 = token0;                                // gas savings
-        address _token1 = token1;                                // gas savings
-        uint balance0 = IHRC20(_token0).balanceOf(address(this));
-        uint balance1 = IHRC20(_token1).balanceOf(address(this));
-        uint liquidity = balanceOf[address(this)];
+    function burn(address to)
+        external
+        lock
+        returns (uint256 amount0, uint256 amount1)
+    {
+        (uint112 _reserve0, uint112 _reserve1, ) = getReserves(); // gas savings
+        address _token0 = token0; // gas savings
+        address _token1 = token1; // gas savings
+        uint256 balance0 = IHRC20(_token0).balanceOf(address(this));
+        uint256 balance1 = IHRC20(_token1).balanceOf(address(this));
+        uint256 liquidity = balanceOf[address(this)];
 
         bool feeOn = _mintFee(_reserve0, _reserve1);
-        uint _totalSupply = totalSupply; // gas savings, must be defined here since totalSupply can update in _mintFee
+        uint256 _totalSupply = totalSupply; // gas savings, must be defined here since totalSupply can update in _mintFee
         amount0 = liquidity.mul(balance0) / _totalSupply; // using balances ensures pro-rata distribution
         amount1 = liquidity.mul(balance1) / _totalSupply; // using balances ensures pro-rata distribution
-        require(amount0 > 0 && amount1 > 0, 'Makiswap: INSUFFICIENT_LIQUIDITY_BURNED');
+        require(
+            amount0 > 0 && amount1 > 0,
+            "Makiswap: INSUFFICIENT_LIQUIDITY_BURNED"
+        );
         _burn(address(this), liquidity);
         _safeTransfer(_token0, to, amount0);
         _safeTransfer(_token1, to, amount1);
@@ -203,51 +206,96 @@ contract MakiswapPair is MakiswapHRC20 {
         balance1 = IHRC20(_token1).balanceOf(address(this));
 
         _update(balance0, balance1, _reserve0, _reserve1);
-        if (feeOn) kLast = uint(reserve0).mul(reserve1); // reserve0 and reserve1 are up-to-date
+        if (feeOn) kLast = uint256(reserve0).mul(reserve1); // reserve0 and reserve1 are up-to-date
         emit Burn(msg.sender, amount0, amount1, to);
     }
 
     // this low-level function should be called from a contract which performs important safety checks
-    function swap(uint amount0Out, uint amount1Out, address to, bytes calldata data) external lock {
-        require(amount0Out > 0 || amount1Out > 0, 'Makiswap: INSUFFICIENT_OUTPUT_AMOUNT');
-        (uint112 _reserve0, uint112 _reserve1,) = getReserves(); // gas savings
-        require(amount0Out < _reserve0 && amount1Out < _reserve1, 'Makiswap: INSUFFICIENT_LIQUIDITY');
+    function swap(
+        uint256 amount0Out,
+        uint256 amount1Out,
+        address to,
+        bytes calldata data
+    ) external lock {
+        require(
+            amount0Out > 0 || amount1Out > 0,
+            "Makiswap: INSUFFICIENT_OUTPUT_AMOUNT"
+        );
+        (uint112 _reserve0, uint112 _reserve1, ) = getReserves(); // gas savings
+        require(
+            amount0Out < _reserve0 && amount1Out < _reserve1,
+            "Makiswap: INSUFFICIENT_LIQUIDITY"
+        );
 
-        uint balance0;
-        uint balance1;
-        { // scope for _token{0,1}, avoids stack too deep errors
-        address _token0 = token0;
-        address _token1 = token1;
-        require(to != _token0 && to != _token1, 'Makiswap: INVALID_TO');
-        if (amount0Out > 0) _safeTransfer(_token0, to, amount0Out); // optimistically transfer tokens
-        if (amount1Out > 0) _safeTransfer(_token1, to, amount1Out); // optimistically transfer tokens
-        if (data.length > 0) IMakiswapCallee(to).makiswapCall(msg.sender, amount0Out, amount1Out, data);
-        balance0 = IHRC20(_token0).balanceOf(address(this));
-        balance1 = IHRC20(_token1).balanceOf(address(this));
+        uint256 balance0;
+        uint256 balance1;
+        {
+            // scope for _token{0,1}, avoids stack too deep errors
+            address _token0 = token0;
+            address _token1 = token1;
+            require(to != _token0 && to != _token1, "Makiswap: INVALID_TO");
+            if (amount0Out > 0) _safeTransfer(_token0, to, amount0Out); // optimistically transfer tokens
+            if (amount1Out > 0) _safeTransfer(_token1, to, amount1Out); // optimistically transfer tokens
+            if (data.length > 0)
+                IMakiswapCallee(to).makiswapCall(
+                    msg.sender,
+                    amount0Out,
+                    amount1Out,
+                    data
+                );
+            balance0 = IHRC20(_token0).balanceOf(address(this));
+            balance1 = IHRC20(_token1).balanceOf(address(this));
         }
-        uint amount0In = balance0 > _reserve0 - amount0Out ? balance0 - (_reserve0 - amount0Out) : 0;
-        uint amount1In = balance1 > _reserve1 - amount1Out ? balance1 - (_reserve1 - amount1Out) : 0;
-        require(amount0In > 0 || amount1In > 0, 'Makiswap: INSUFFICIENT_INPUT_AMOUNT');
-        { // scope for reserve{0,1}Adjusted, avoids stack too deep errors
-        uint balance0Adjusted = balance0.mul(1000).sub(amount0In.mul(2));
-        uint balance1Adjusted = balance1.mul(1000).sub(amount1In.mul(2));
-        require(balance0Adjusted.mul(balance1Adjusted) >= uint(_reserve0).mul(_reserve1).mul(1000**2), 'Makiswap: K');
+        uint256 amount0In =
+            balance0 > _reserve0 - amount0Out
+                ? balance0 - (_reserve0 - amount0Out)
+                : 0;
+        uint256 amount1In =
+            balance1 > _reserve1 - amount1Out
+                ? balance1 - (_reserve1 - amount1Out)
+                : 0;
+        require(
+            amount0In > 0 || amount1In > 0,
+            "Makiswap: INSUFFICIENT_INPUT_AMOUNT"
+        );
+        {
+            // scope for reserve{0,1}Adjusted, avoids stack too deep errors
+            uint256 balance0Adjusted = balance0.mul(1000).sub(amount0In.mul(2));
+            uint256 balance1Adjusted = balance1.mul(1000).sub(amount1In.mul(2));
+            require(
+                balance0Adjusted.mul(balance1Adjusted) >=
+                    uint256(_reserve0).mul(_reserve1).mul(1000**2),
+                "Makiswap: K"
+            );
         }
 
         _update(balance0, balance1, _reserve0, _reserve1);
         emit Swap(msg.sender, amount0In, amount1In, amount0Out, amount1Out, to);
     }
-    
+
     // force balances to match reserves
     function skim(address to) external lock {
         address _token0 = token0; // gas savings
         address _token1 = token1; // gas savings
-        _safeTransfer(_token0, to, IHRC20(_token0).balanceOf(address(this)).sub(reserve0));
-        _safeTransfer(_token1, to, IHRC20(_token1).balanceOf(address(this)).sub(reserve1));
+        _safeTransfer(
+            _token0,
+            to,
+            IHRC20(_token0).balanceOf(address(this)).sub(reserve0)
+        );
+        _safeTransfer(
+            _token1,
+            to,
+            IHRC20(_token1).balanceOf(address(this)).sub(reserve1)
+        );
     }
 
     // force reserves to match balances
     function sync() external lock {
-        _update(IHRC20(token0).balanceOf(address(this)), IHRC20(token1).balanceOf(address(this)), reserve0, reserve1);
+        _update(
+            IHRC20(token0).balanceOf(address(this)),
+            IHRC20(token1).balanceOf(address(this)),
+            reserve0,
+            reserve1
+        );
     }
 }

@@ -20,13 +20,11 @@ ___
 
 ___
 # (Auto)-Generate Flat Contracts
-- We've enabled our Makiswap Protocol repository to enact **reproducable results**.
-- Use the `check` script to generate fresh, flattened contracts stored in the 'verification' directory. 
-### Generation and Verification Process
-- **Directions**: (1) Comment out local file paths, then (2) uncomment imports tied to a dependency, then (3) use the script for your contract of interest.
-- **Example**: in order to verify the flat files for the `MasterChef.sol` and `SousChef.sol` smart contracts, simply run the following in your terminal in order to simplify and automates the flattening process in a transparent and consistent manner:
+- We've enabled our Makiswap Protocol repository to automagically produce flats using the truffle-flattener.
+- Use the `flatten` scripts to generate fresh, flattened contracts stored in the *flats* directory. 
+
 ```
->> yarn check:chefs 
+yarn flatten:chefs 
 ```
 ___
 ## Main Directory Composition
