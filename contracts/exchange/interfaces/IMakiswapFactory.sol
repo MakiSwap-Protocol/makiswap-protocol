@@ -17,7 +17,7 @@ interface IMakiswapFactory {
     function allPairs(uint) external view returns (address pair);
 
     function createPair(address tokenA, address tokenB) external returns (address pair);
-
+    function setMigrator(address) external;
     function setFeeTo(address) external;
     function setFeeToSetter(address) external;
 }

@@ -6,6 +6,7 @@ import './interfaces/IMakiswapFactory.sol';
 import './MakiswapPair.sol';
 
 contract MakiswapFactory is IMakiswapFactory {
+    bytes32 public constant INIT_CODE_PAIR_HASH = keccak256(abi.encodePacked(type(MakiswapPair).creationCode));
     address public feeTo;
     address public feeToSetter;
     address public migrator;
@@ -20,10 +21,6 @@ contract MakiswapFactory is IMakiswapFactory {
 
     constructor(address _feeToSetter) public {
         feeToSetter = _feeToSetter;
-    }
-
-    function pairCodeHash() external pure returns (bytes32) {
-        return keccak256(type(MakiswapPair).creationCode);
     }
 
     function createPair(address tokenA, address tokenB) external returns (address pair) {
