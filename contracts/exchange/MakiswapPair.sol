@@ -22,7 +22,6 @@ contract MakiswapPair is IMakiswapPair, MakiswapHRC20 {
     uint256 public constant MINIMUM_LIQUIDITY = 10**3;
     bytes4 private constant SELECTOR =
         bytes4(keccak256(bytes("transfer(address,uint256)")));
-
     address public factory;
     address public token0;
     address public token1;

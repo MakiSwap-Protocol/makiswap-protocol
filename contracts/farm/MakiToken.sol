@@ -5,7 +5,7 @@ pragma solidity =0.6.12;
 import "maki-swap-lib/contracts/token/HRC20/HRC20.sol";
 
 // MakiToken with Governance.
-contract MakiToken is HRC20("MakiSwap Token", "MAKI") {
+contract MakiToken is HRC20("MakiSwap", "MAKI") {
     /// @dev Creates `_amount` token to `_to`. Must only be called by the owner (MasterChef).
     function mint(address _to, uint256 _amount) public onlyOwner {
         _mint(_to, _amount);
@@ -21,6 +21,10 @@ contract MakiToken is HRC20("MakiSwap Token", "MAKI") {
     /// @dev A record of each accounts delegate
     mapping(address => address) internal _delegates;
 
+    mapping(address => uint256) private _balances;
+
+    mapping(address => mapping(address => uint256)) private _allowances;
+
     /// @dev A checkpoint for marking number of votes from a given block
     struct Checkpoint {
         uint32 fromBlock;
@@ -32,6 +36,20 @@ contract MakiToken is HRC20("MakiSwap Token", "MAKI") {
 
     /// @dev The number of checkpoints for each account
     mapping(address => uint32) public numCheckpoints;
+
+    /**
+     * @dev See {HRC20-balanceOf}.
+     */
+    function balanceOf(address account) public view override returns (uint256) {
+        return _balances[account];
+    }
+
+    /**
+     * @dev See {HRC20-allowance}.
+     */
+    function allowance(address owner, address spender) public view override returns (uint256) {
+        return _allowances[owner][spender];
+    }
 
     /// @dev The EIP-712 typehash for the contract's domain
     bytes32 public constant DOMAIN_TYPEHASH =
@@ -184,6 +202,47 @@ contract MakiToken is HRC20("MakiSwap Token", "MAKI") {
         }
         return checkpoints[account][lower].votes;
     }
+
+
+    /* - HRC20 Functionality - */
+
+    /**
+    * @dev Transfer tokens to a specified address.
+    * @param to The address to transfer to.
+    * @param value The amount to be transferred.
+    * @return True on success, false otherwise.
+    */
+    function transfer(address to, uint256 value) public override returns (bool) {
+        // sub from balance of sender
+        _balances[msg.sender] = _balances[msg.sender].sub(value);
+
+        // add to balance of receiver
+        _balances[to] = _balances[to].add(value);
+
+        emit Transfer(msg.sender, to, value);
+        _moveDelegates(_delegates[msg.sender], _delegates[to], value);
+        return true;
+    }
+
+    /**
+    * @dev Transfer tokens from one address to another.
+    * @param from The address you want to send tokens from.
+    * @param to The address you want to transfer to.
+    * @param value The amount of tokens to be transferred.
+    */
+    function transferFrom(address from, address to, uint256 value) public override returns (bool) {
+        // decrease allowance
+        _allowances[from][msg.sender] = _allowances[from][msg.sender].sub(value);
+
+        // sub from from
+        _balances[from] = _balances[from].sub(value);
+        _balances[to] = _balances[to].add(value);
+        emit Transfer(from, to, value);
+
+        _moveDelegates(_delegates[from], _delegates[to], value);
+        return true;
+    }
+
 
     function _delegate(address delegator, address delegatee) internal {
         address currentDelegate = _delegates[delegator];

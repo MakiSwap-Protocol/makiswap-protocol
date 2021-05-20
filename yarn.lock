@@ -10101,10 +10101,10 @@ maki-swap-lib@^0.1.1:
   resolved "https://registry.yarnpkg.com/maki-swap-lib/-/maki-swap-lib-0.1.1.tgz#23b2576d8cf03abd6e1b66071e4f24665e156206"
   integrity sha512-wQIeoDqaaoj7KoRRefF6JmTapHicbIl9Gjyqpi6u06DajeEEe8KjMVq99ShV1wVNCUziHyBWbFwZzQaKBl2zUg==
 
-maki-swap-lib@^1.1.0:
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/maki-swap-lib/-/maki-swap-lib-1.1.0.tgz#f9dbd8a747ed10d6fa8906b1fa4800f7d8f3bc77"
-  integrity sha512-V++aSw6SQK34xo4CjR/pUAQT503PNoYpUn6XMNHCSWPsmtW9MwziMyF8wEfcGRY6FRLo+5NafKdAD/cnbo62pw==
+maki-swap-lib@^2.0.0:
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/maki-swap-lib/-/maki-swap-lib-2.0.0.tgz#f03d5820e84be0191c3165352ff1bb1247bffe23"
+  integrity sha512-3IcTHlObUy7Vot7r0FecVhXjCWZ85aaQYRY2VCl4kUrAbI6CZmdrsMpikgbDizEcX0yoqZSyP0omqgvlcrmbSA==
 
 maki-swap-periphery@^2.1.0:
   version "2.1.0"

@@ -12,7 +12,7 @@
   "dependencies": {
     "@openzeppelin/contracts": "3.4.0",
     "@openzeppelin/test-helpers": "^0.5.10",
-    "maki-swap-lib": "^1.1.0",
+    "maki-swap-lib": "^2.0.0",
     "maki-swap-periphery": "^2.1.0",
     "makiswap-core": "^3.0.0",
     "truffle": "^5.1.58",
