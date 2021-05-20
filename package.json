@@ -5,7 +5,8 @@
   "scripts": {
     "migrate": "truffle migrate --reset",
     "compile": "truffle compile",
-    "flat:exchange": "truffle-flattener contracts/exchange/MakiswapFactory.sol > flats/MakiswapFactory_flat.sol && truffle-flattener contracts/exchange/MakiswapRouter.sol > flats/MakiswapRouter_flat.sol",
+    "flat:exchange": "truffle-flattener contracts/exchange/MakiswapFactory.sol > flats/MakiswapFactory_flat.sol",
+    "flat:router": "truffle-flattener contracts/exchange/MakiswapRouter.sol > flats/MakiswapRouter_flat.sol",
     "flat:chefs": "truffle-flattener contracts/farm/MasterChef.sol > flats/MasterChef_flat.sol && truffle-flattener contracts/farm/SousChef.sol > flats/SousChef_flat.sol",
     "flat:tokens": "truffle-flattener contracts/farm/MakiToken.sol > flats//MakiToken_flat.sol && truffle-flattener contracts/farm/SoyBar.sol > flats/SoyBar_flat.sol "
   },

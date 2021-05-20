@@ -2,19 +2,18 @@
 
 pragma solidity =0.6.6;
 
-import "makiswap-core/contracts/interfaces/IMakiswapFactory.sol";
+import "./interfaces/IMakiswapFactory.sol";
 import "maki-swap-lib/contracts/utils/TransferHelper.sol";
-import "maki-swap-periphery/contracts/libraries/MakiswapLibrary.sol";
+import "./libraries/MakiswapLibrary.sol";
 import "maki-swap-periphery/contracts/interfaces/IMakiswapRouter02.sol";
-import "maki-swap-lib/contracts/math/SafeMath.sol";
 import "makiswap-core/contracts/interfaces/IHRC20.sol";
+import "maki-swap-periphery/contracts/interfaces/IWHT.sol";
 
 contract MakiswapRouter is IMakiswapRouter02 {
     using SafeMath for uint256;
 
-    address public factory;
-
-    address public WHT;
+    address public immutable override factory;
+    address public immutable override WHT;
 
     modifier ensure(uint256 deadline) {
         require(deadline >= block.timestamp, "MakiswapRouter: EXPIRED");
@@ -135,7 +134,7 @@ contract MakiswapRouter is IMakiswapRouter02 {
         IWHT(WHT).deposit{value: amountHT}();
         assert(IWHT(WHT).transfer(pair, amountHT));
         liquidity = IMakiswapPair(pair).mint(to);
-        // refund dust eth, if any
+        // refund dust ht, if any
         if (msg.value > amountHT)
             TransferHelper.safeTransferHT(msg.sender, msg.value - amountHT);
     }
@@ -526,7 +525,7 @@ contract MakiswapRouter is IMakiswapRouter02 {
             )
         );
         _swap(amounts, path, to);
-        // refund dust eth, if any
+        // refund dust ht, if any
         if (msg.value > amounts[0])
             TransferHelper.safeTransferHT(msg.sender, msg.value - amounts[0]);
     }

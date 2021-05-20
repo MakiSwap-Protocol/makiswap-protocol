@@ -7,21 +7,18 @@ import './MakiswapPair.sol';
 
 contract MakiswapFactory is IMakiswapFactory {
     bytes32 public constant INIT_CODE_PAIR_HASH = keccak256(abi.encodePacked(type(MakiswapPair).creationCode));
+
     address public feeTo;
-    address public feeToSetter;
+    address public feeToSetter = msg.sender;
     address public migrator;
     uint256 public totalPairs = 0;
 
     mapping(address => mapping(address => address)) public getPair;
 
     event PairCreated(address indexed token0, address indexed token1, address pair, uint);
-    event SetFeeTo(address indexed user, address indexed _feeTo);
-    event SetMigrator(address indexed user, address indexed _migrator);
-    event FeeToSetter(address indexed user, address indexed _feetoSetter);
-
-    constructor(address _feeToSetter) public {
-        feeToSetter = _feeToSetter;
-    }
+    event SetFeeTo(address indexed user, address indexed feeTo);
+    event SetMigrator(address indexed user, address indexed migrator);
+    event FeeToSetter(address indexed user, address indexed feetoSetter);
 
     function createPair(address tokenA, address tokenB) external returns (address pair) {
         require(tokenA != tokenB, 'Makiswap: IDENTICAL_ADDRESSES');

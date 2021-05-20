@@ -64,3 +64,8 @@ ___
 ### Notes on Libraries
 - Conventionally, devs import Open Zeppelin smart contracts. However, given Huobi is the smart chain of choice, in instances where ERC20 / BEP20 is referenced a new variant of the contract in question is forked and becomes a unique contract in name only, not in logic.
 - The schema of swap-lib, swap-core, and swap-periphery are modeled exactly like Pancakeswap, from which the repositories are forked and altered to meet the context of Huobi in lieu of Binance.
+
+## Deployed Contracts (Testnet)
+- [MakiToken.sol](https://testnet.hecoinfo.com/address/0x0406c65B0455f59d875f78F5aCBf9a79Be3e2593#code): 0x0406c65B0455f59d875f78F5aCBf9a79Be3e2593
+- [MakiswapFactory.sol](https://testnet.hecoinfo.com/address/0x315db589224D14bDe6e0dEa5C685214aF7997225#code): 0x315db589224D14bDe6e0dEa5C685214aF7997225
+- [MakiswapRouter.sol](https://testnet.hecoinfo.com/address/0x81b1Ef172856930A670023eedAF98Fb7E061d230#code): 0x81b1Ef172856930A670023eedAF98Fb7E061d230

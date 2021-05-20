@@ -1,30 +1,27 @@
-// File: makiswap-core/contracts/interfaces/IMakiswapFactory.sol
-
 // SPDX-License-Identifier: MIT
 
-pragma solidity >=0.5.16;
+// File: contracts/exchange/interfaces/IMakiswapFactory.sol
+
+pragma solidity >=0.5.0;
 
 interface IMakiswapFactory {
     event PairCreated(address indexed token0, address indexed token1, address pair, uint);
+    event SetFeeTo(address indexed user, address indexed _feeTo);
+    event SetMigrator(address indexed user, address indexed _migrator);
+    event FeeToSetter(address indexed user, address indexed _feetoSetter);
 
     function feeTo() external view returns (address);
     function feeToSetter() external view returns (address);
-    function migrator() external view returns (address);
 
     function getPair(address tokenA, address tokenB) external view returns (address pair);
-    function allPairs(uint) external view returns (address pair);
-    function allPairsLength() external view returns (uint);
 
     function createPair(address tokenA, address tokenB) external returns (address pair);
-
+    function setMigrator(address) external;
     function setFeeTo(address) external;
     function setFeeToSetter(address) external;
-    function setMigrator(address) external;
 }
 
 // File: maki-swap-lib/contracts/utils/TransferHelper.sol
-
-// SPDX-License-Identifier: GPL-3.0-or-later
 
 pragma solidity >=0.6.0;
 
@@ -68,8 +65,6 @@ library TransferHelper {
 }
 
 // File: makiswap-core/contracts/interfaces/IMakiswapPair.sol
-
-// SPDX-License-Identifier: MIT
 
 pragma solidity >=0.5.0;
 
@@ -126,8 +121,6 @@ interface IMakiswapPair {
 
 // File: makiswap-core/contracts/libraries/SafeMath.sol
 
-// SPDX-License-Identifier: MIT
-
 pragma solidity >=0.5.16;
 
 // a library for performing overflow-safe math, courtesy of DappHub (https://github.com/dapphub/ds-math)
@@ -146,13 +139,9 @@ library SafeMath {
     }
 }
 
-// File: maki-swap-periphery/contracts/libraries/MakiswapLibrary.sol
-
-// SPDX-License-Identifier: MIT
+// File: contracts/exchange/libraries/MakiswapLibrary.sol
 
 pragma solidity >=0.5.0;
-
-
 
 library MakiswapLibrary {
     using SafeMath for uint;
@@ -171,7 +160,7 @@ library MakiswapLibrary {
                 hex'ff',
                 factory,
                 keccak256(abi.encodePacked(token0, token1)),
-                hex'03994a19f6b821aa8c1f78416b63d384b3534e859b72f130b8fc1f38d1d221fa' // init code hash
+                hex'dff84241dff24211d3b6da19070d0e26d4e2eaf0ad6036ae217dc0fff75581f0' // init code hash
             ))));
     }
 
@@ -234,8 +223,6 @@ library MakiswapLibrary {
 }
 
 // File: maki-swap-periphery/contracts/interfaces/IMakiswapRouter01.sol
-
-// SPDX-License-Identifier: MIT
 
 pragma solidity >=0.6.2;
 
@@ -335,8 +322,6 @@ interface IMakiswapRouter01 {
 
 // File: maki-swap-periphery/contracts/interfaces/IMakiswapRouter02.sol
 
-// SPDX-License-Identifier: MIT
-
 pragma solidity >=0.6.2;
 
 
@@ -381,201 +366,7 @@ interface IMakiswapRouter02 is IMakiswapRouter01 {
     ) external;
 }
 
-// File: maki-swap-lib/contracts/math/SafeMath.sol
-
-// SPDX-License-Identifier: MIT
-
-pragma solidity >=0.5.0 <0.8.0;
-
-/**
- * @dev Wrappers over Solidity's arithmetic operations with added overflow
- * checks.
- *
- * Arithmetic operations in Solidity wrap on overflow. This can easily result
- * in bugs, because programmers usually assume that an overflow raises an
- * error, which is the standard behavior in high level programming languages.
- * `SafeMath` restores this intuition by reverting the transaction when an
- * operation overflows.
- *
- * Using this library instead of the unchecked operations eliminates an entire
- * class of bugs, so it's recommended to use it always.
- */
-library SafeMath {
-    /**
-     * @dev Returns the addition of two unsigned integers, reverting on
-     * overflow.
-     *
-     * Counterpart to Solidity's `+` operator.
-     *
-     * Requirements:
-     *
-     * - Addition cannot overflow.
-     */
-    function add(uint256 a, uint256 b) internal pure returns (uint256) {
-        uint256 c = a + b;
-        require(c >= a, 'SafeMath: addition overflow');
-
-        return c;
-    }
-
-    /**
-     * @dev Returns the subtraction of two unsigned integers, reverting on
-     * overflow (when the result is negative).
-     *
-     * Counterpart to Solidity's `-` operator.
-     *
-     * Requirements:
-     *
-     * - Subtraction cannot overflow.
-     */
-    function sub(uint256 a, uint256 b) internal pure returns (uint256) {
-        return sub(a, b, 'SafeMath: subtraction overflow');
-    }
-
-    /**
-     * @dev Returns the subtraction of two unsigned integers, reverting with custom message on
-     * overflow (when the result is negative).
-     *
-     * Counterpart to Solidity's `-` operator.
-     *
-     * Requirements:
-     *
-     * - Subtraction cannot overflow.
-     */
-    function sub(
-        uint256 a,
-        uint256 b,
-        string memory errorMessage
-    ) internal pure returns (uint256) {
-        require(b <= a, errorMessage);
-        uint256 c = a - b;
-
-        return c;
-    }
-
-    /**
-     * @dev Returns the multiplication of two unsigned integers, reverting on
-     * overflow.
-     *
-     * Counterpart to Solidity's `*` operator.
-     *
-     * Requirements:
-     *
-     * - Multiplication cannot overflow.
-     */
-    function mul(uint256 a, uint256 b) internal pure returns (uint256) {
-        // Gas optimization: this is cheaper than requiring 'a' not being zero, but the
-        // benefit is lost if 'b' is also tested.
-        // See: https://github.com/OpenZeppelin/openzeppelin-contracts/pull/522
-        if (a == 0) {
-            return 0;
-        }
-
-        uint256 c = a * b;
-        require(c / a == b, 'SafeMath: multiplication overflow');
-
-        return c;
-    }
-
-    /**
-     * @dev Returns the integer division of two unsigned integers. Reverts on
-     * division by zero. The result is rounded towards zero.
-     *
-     * Counterpart to Solidity's `/` operator. Note: this function uses a
-     * `revert` opcode (which leaves remaining gas untouched) while Solidity
-     * uses an invalid opcode to revert (consuming all remaining gas).
-     *
-     * Requirements:
-     *
-     * - The divisor cannot be zero.
-     */
-    function div(uint256 a, uint256 b) internal pure returns (uint256) {
-        return div(a, b, 'SafeMath: division by zero');
-    }
-
-    /**
-     * @dev Returns the integer division of two unsigned integers. Reverts with custom message on
-     * division by zero. The result is rounded towards zero.
-     *
-     * Counterpart to Solidity's `/` operator. Note: this function uses a
-     * `revert` opcode (which leaves remaining gas untouched) while Solidity
-     * uses an invalid opcode to revert (consuming all remaining gas).
-     *
-     * Requirements:
-     *
-     * - The divisor cannot be zero.
-     */
-    function div(
-        uint256 a,
-        uint256 b,
-        string memory errorMessage
-    ) internal pure returns (uint256) {
-        require(b > 0, errorMessage);
-        uint256 c = a / b;
-        // assert(a == b * c + a % b); // There is no case in which this doesn't hold
-
-        return c;
-    }
-
-    /**
-     * @dev Returns the remainder of dividing two unsigned integers. (unsigned integer modulo),
-     * Reverts when dividing by zero.
-     *
-     * Counterpart to Solidity's `%` operator. This function uses a `revert`
-     * opcode (which leaves remaining gas untouched) while Solidity uses an
-     * invalid opcode to revert (consuming all remaining gas).
-     *
-     * Requirements:
-     *
-     * - The divisor cannot be zero.
-     */
-    function mod(uint256 a, uint256 b) internal pure returns (uint256) {
-        return mod(a, b, 'SafeMath: modulo by zero');
-    }
-
-    /**
-     * @dev Returns the remainder of dividing two unsigned integers. (unsigned integer modulo),
-     * Reverts with custom message when dividing by zero.
-     *
-     * Counterpart to Solidity's `%` operator. This function uses a `revert`
-     * opcode (which leaves remaining gas untouched) while Solidity uses an
-     * invalid opcode to revert (consuming all remaining gas).
-     *
-     * Requirements:
-     *
-     * - The divisor cannot be zero.
-     */
-    function mod(
-        uint256 a,
-        uint256 b,
-        string memory errorMessage
-    ) internal pure returns (uint256) {
-        require(b != 0, errorMessage);
-        return a % b;
-    }
-
-    function min(uint256 x, uint256 y) internal pure returns (uint256 z) {
-        z = x < y ? x : y;
-    }
-
-    // babylonian method (https://en.wikipedia.org/wiki/Methods_of_computing_square_roots#Babylonian_method)
-    function sqrt(uint256 y) internal pure returns (uint256 z) {
-        if (y > 3) {
-            z = y;
-            uint256 x = y / 2 + 1;
-            while (x < z) {
-                z = x;
-                x = (y / x + x) / 2;
-            }
-        } else if (y != 0) {
-            z = 1;
-        }
-    }
-}
-
 // File: makiswap-core/contracts/interfaces/IHRC20.sol
-
-// SPDX-License-Identifier: MIT
 
 pragma solidity >=0.5.0;
 
@@ -595,24 +386,25 @@ interface IHRC20 {
     function transferFrom(address from, address to, uint value) external returns (bool);
 }
 
+// File: maki-swap-periphery/contracts/interfaces/IWHT.sol
+
+pragma solidity >=0.5.0;
+
+interface IWHT {
+    function deposit() external payable;
+    function transfer(address to, uint value) external returns (bool);
+    function withdraw(uint) external;
+}
+
 // File: contracts/exchange/MakiswapRouter.sol
 
-// SPDX-License-Identifier: MIT
-
 pragma solidity =0.6.6;
-
-
-
-
-
-
 
 contract MakiswapRouter is IMakiswapRouter02 {
     using SafeMath for uint256;
 
-    address public factory;
-
-    address public WHT;
+    address public immutable override factory;
+    address public immutable override WHT;
 
     modifier ensure(uint256 deadline) {
         require(deadline >= block.timestamp, "MakiswapRouter: EXPIRED");
@@ -733,7 +525,7 @@ contract MakiswapRouter is IMakiswapRouter02 {
         IWHT(WHT).deposit{value: amountHT}();
         assert(IWHT(WHT).transfer(pair, amountHT));
         liquidity = IMakiswapPair(pair).mint(to);
-        // refund dust eth, if any
+        // refund dust ht, if any
         if (msg.value > amountHT)
             TransferHelper.safeTransferHT(msg.sender, msg.value - amountHT);
     }
@@ -1124,7 +916,7 @@ contract MakiswapRouter is IMakiswapRouter02 {
             )
         );
         _swap(amounts, path, to);
-        // refund dust eth, if any
+        // refund dust ht, if any
         if (msg.value > amounts[0])
             TransferHelper.safeTransferHT(msg.sender, msg.value - amounts[0]);
     }

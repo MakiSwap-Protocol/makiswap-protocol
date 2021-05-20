@@ -1,10 +1,8 @@
-// File: contracts/exchange/interfaces/IMakiswapFactory.sol
-
 // SPDX-License-Identifier: MIT
 
 pragma solidity >=0.5.0;
 
-// import 'makiswap-core/contracts/interfaces/IMakiswapFactory.sol';
+// File: '/interfaces/IMakiswapFactory.sol';
 
 interface IMakiswapFactory {
     event PairCreated(address indexed token0, address indexed token1, address pair, uint);
@@ -16,7 +14,6 @@ interface IMakiswapFactory {
     function feeToSetter() external view returns (address);
 
     function getPair(address tokenA, address tokenB) external view returns (address pair);
-    function allPairs(uint) external view returns (address pair);
 
     function createPair(address tokenA, address tokenB) external returns (address pair);
     function setMigrator(address) external;
@@ -816,25 +813,19 @@ contract MakiswapPair is IMakiswapPair, MakiswapHRC20 {
 pragma solidity >=0.5.16;
 
 contract MakiswapFactory is IMakiswapFactory {
+    bytes32 public constant INIT_CODE_PAIR_HASH = keccak256(abi.encodePacked(type(MakiswapPair).creationCode));
+
     address public feeTo;
-    address public feeToSetter;
+    address public feeToSetter = msg.sender;
     address public migrator;
     uint256 public totalPairs = 0;
 
     mapping(address => mapping(address => address)) public getPair;
 
     event PairCreated(address indexed token0, address indexed token1, address pair, uint);
-    event SetFeeTo(address indexed user, address indexed _feeTo);
-    event SetMigrator(address indexed user, address indexed _migrator);
-    event FeeToSetter(address indexed user, address indexed _feetoSetter);
-
-    constructor(address _feeToSetter) public {
-        feeToSetter = _feeToSetter;
-    }
-
-    function pairCodeHash() external pure returns (bytes32) {
-        return keccak256(type(MakiswapPair).creationCode);
-    }
+    event SetFeeTo(address indexed user, address indexed feeTo);
+    event SetMigrator(address indexed user, address indexed migrator);
+    event FeeToSetter(address indexed user, address indexed feetoSetter);
 
     function createPair(address tokenA, address tokenB) external returns (address pair) {
         require(tokenA != tokenB, 'Makiswap: IDENTICAL_ADDRESSES');

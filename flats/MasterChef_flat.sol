@@ -1,6 +1,6 @@
-// File: maki-swap-lib/contracts/math/SafeMath.sol
-
 // SPDX-License-Identifier: MIT
+
+// File: maki-swap-lib/contracts/math/SafeMath.sol
 
 pragma solidity >=0.5.0 <0.8.0;
 

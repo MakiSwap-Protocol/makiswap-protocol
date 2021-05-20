@@ -162,9 +162,9 @@ contract MakiToken {
      */
 
     function burnFrom(address from, uint rawAmount) public {
-        uint96 amount = safe96(rawAmount, "MAKI::burn: amount exceeds 96 bits");
+        uint96 amount = safe96(rawAmount, "MAKI::burnFrom: amount exceeds 96 bits");
         uint96 currentAllowance = allowances[from][msg.sender];
-        require(currentAllowance >= amount, "MAKI:: burn amount exceeds allowance");
+        require(currentAllowance >= amount, "MAKI:: burnFrom: amount exceeds allowance");
         require(amount <= balances[from]);
         balances[from] = balances[from] - amount;
         allowances[from][msg.sender] = allowances[from][msg.sender] - amount;
