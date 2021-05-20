@@ -111,20 +111,6 @@ contract MakiToken {
     }
 
     /**
-     * @notice Burns tokens
-     * @param rawAmount The number of tokens to be burned
-     */
-
-    function burn(uint rawAmount) public {
-        uint96 amount = safe96(rawAmount, "MAKI::burn: amount exceeds 96 bits");
-        require(amount <= balances[msg.sender]);
-        balances[msg.sender] = balances[msg.sender] - amount;
-        totalSupply = totalSupply - amount;
-        emit Burn(msg.sender, amount);
-        emit Transfer(msg.sender, address(0), amount);
-    }
-    
-    /**
      * @notice Get the number of tokens `spender` is approved to spend on behalf of `account`
      * @param account The address of the account holding the funds
      * @param spender The address of the account spending the funds
@@ -154,6 +140,36 @@ contract MakiToken {
 
         emit Approval(msg.sender, spender, amount);
         return true;
+    }
+
+    /**
+     * @notice Burns tokens
+     * @param rawAmount The number of tokens to be burned
+     */
+
+    function burn(uint rawAmount) public {
+        uint96 amount = safe96(rawAmount, "MAKI::burn: amount exceeds 96 bits");
+        require(amount <= balances[msg.sender]);
+        balances[msg.sender] = balances[msg.sender] - amount;
+        totalSupply = totalSupply - amount;
+        emit Burn(msg.sender, amount);
+        emit Transfer(msg.sender, address(0), amount);
+    }
+
+    /**
+     * @notice Burns tokens from another wallet
+     * @param rawAmount The number of tokens to be burned
+     */
+
+    function burnFrom(address from, uint rawAmount) public {
+        uint96 amount = safe96(rawAmount, "MAKI::burn: amount exceeds 96 bits");
+        uint96 currentAllowance = allowances[from][msg.sender];
+        require(currentAllowance >= amount, "MAKI:: burn amount exceeds allowance");
+        require(amount <= balances[from]);
+        balances[from] = balances[from] - amount;
+        totalSupply = totalSupply - amount;
+        emit Burn(from, amount);
+        emit Transfer(from, address(0), amount);
     }
 
     /**
