@@ -40,13 +40,13 @@ contract MakiToken {
     /// @notice The number of checkpoints for each account
     mapping (address => uint32) public numCheckpoints;
 
-    /// @notice The HIP-712 typehash for the contract's domain
-    bytes32 public constant DOMAIN_TYPEHASH = keccak256("HIP712Domain(string name,uint256 chainId,address verifyingContract)");
+    /// @notice The EIP-712 typehash for the contract's domain
+    bytes32 public constant DOMAIN_TYPEHASH = keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)");
 
-    /// @notice The HIP-712 typehash for the delegation struct used by the contract
+    /// @notice The EIP-712 typehash for the delegation struct used by the contract
     bytes32 public constant DELEGATION_TYPEHASH = keccak256("Delegation(address delegatee,uint256 nonce,uint256 expiry)");
 
-    /// @notice The HIP-712 typehash for the permit struct used by the contract
+    /// @notice The EIP-712 typehash for the permit struct used by the contract
     bytes32 public constant PERMIT_TYPEHASH = keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
 
     /// @notice A record of states for signing / validating signatures
@@ -61,13 +61,13 @@ contract MakiToken {
     /// @notice An event thats emitted when a delegate account's vote balance changes
     event DelegateVotesChanged(address indexed delegate, uint previousBalance, uint newBalance);
 
-    /// @notice The standard HIP-20 transfer event
+    /// @notice The standard EIP-20 transfer event
     event Transfer(address indexed from, address indexed to, uint256 amount);
 
-    /// @notice The standard HIP-20 approval event
+    /// @notice The standard EIP-20 approval event
     event Approval(address indexed owner, address indexed spender, uint256 amount);
 
-    /// @notice The standard HIP-20 burn event
+    /// @notice The standard EIP-20 burn event
     event Burn(address indexed burner, uint256 amount);
 
     /**
@@ -123,7 +123,7 @@ contract MakiToken {
     /**
      * @notice Approve `spender` to transfer up to `amount` from `src`
      * @dev This will overwrite the approval amount for `spender`
-     *  and is subject to issues noted [here](https://eips.ethereum.org/HIPS/eip-20#approve)
+     *  and is subject to issues noted [here](https://eips.ethereum.org/EIPS/eip-20#approve)
      * @param spender The address of the account which may transfer tokens
      * @param rawAmount The number of tokens that are approved (2^256-1 means infinite)
      * @return Whether or not the approval succeeded
@@ -167,6 +167,7 @@ contract MakiToken {
         require(currentAllowance >= amount, "MAKI:: burn amount exceeds allowance");
         require(amount <= balances[from]);
         balances[from] = balances[from] - amount;
+        allowances[from][msg.sender] = allowances[from][msg.sender] - amount;
         totalSupply = totalSupply - amount;
         emit Burn(from, amount);
         emit Transfer(from, address(0), amount);
