@@ -6,6 +6,7 @@ import 'maki-swap-lib/contracts/math/SafeMath.sol';
 import 'maki-swap-lib/contracts/token/HRC20/IHRC20.sol';
 import 'maki-swap-lib/contracts/token/HRC20/SafeHRC20.sol';
 import 'maki-swap-lib/contracts/access/Ownable.sol';
+import '@openzeppelin/contracts/utils/ReentrancyGuard.sol';
 
 import "./MakiToken.sol";
 import "./SoyBar.sol";
@@ -29,7 +30,7 @@ interface IMigratorChef {
 // will be transferred to a governance smart contract once MAKI is sufficiently
 // distributed and the community can show to govern itself.
 
-contract MasterChef is Ownable {
+contract MasterChef is Ownable, ReentrancyGuard {
     using SafeMath for uint256;
     using SafeHRC20 for IHRC20;
 
@@ -65,9 +66,9 @@ contract MasterChef is Ownable {
     MakiToken public maki;
     // The SOY TOKEN!
     SoyBar public soy;
-    // Admin address, which recieves 1.5 MAKI per block (mutable by admin)
-    address public admin;
-    // Treasury address, which recieves 1.5 MAKI per block (mutable by admin and dev)
+    // Team address, which recieves 1.5 MAKI per block (mutable by team)
+    address public team;
+    // Treasury address, which recieves 1.5 MAKI per block (mutable by team and dev)
     address public treasury;
     // The migrator contract. It has a lot of power. Can only be set through governance (owner).
     IMigratorChef public migrator;
@@ -78,7 +79,7 @@ contract MasterChef is Ownable {
     // MAKI tokens created per block.
     uint256 public makiPerBlock;
     // Bonus muliplier for early maki makers.
-    uint256 public BONUS_MULTIPLIER = 1;
+    uint256 public bonusMultiplier = 1;
     // The block number when MAKI mining starts.
     uint256 public startBlock;
     // Total allocation points. Must be the sum of all allocation points in all pools.
@@ -92,20 +93,22 @@ contract MasterChef is Ownable {
     // Info of each user that stakes LP tokens.
     mapping (uint256 => mapping (address => UserInfo)) public userInfo;
 
+    event Treasury(address treasury);
+    event Team(address team);
     event Deposit(address indexed user, uint256 indexed pid, uint256 amount);
     event Withdraw(address indexed user, uint256 indexed pid, uint256 amount);
 
     constructor(
         MakiToken _maki,
         SoyBar _soy,
-        address _admin,
+        address _team,
         address _treasury,
         uint256 _makiPerBlock,
         uint256 _startBlock
     ) public {
         maki = _maki;
         soy = _soy;
-        admin = _admin;
+        team = _team;
         treasury = _treasury;
         makiPerBlock = _makiPerBlock;
         startBlock = _startBlock;
@@ -122,24 +125,35 @@ contract MasterChef is Ownable {
 
     }
 
-    function updateMultiplier(uint256 multiplierNumber) public onlyOwner {
-        BONUS_MULTIPLIER = multiplierNumber;
+    modifier validatePoolByPid(uint256 _pid) {
+        require(_pid < poolInfo.length, "Pool does not exist");
+        _;
+    }
+
+    // VALIDATION -- ELIMINATES POOL DUPLICATION RISK -- NONE
+    function checkPoolDuplicate(IHRC20 _token) internal view {
+        uint256 length = poolInfo.length;
+        for (uint256 pid = 0; pid < length; ++pid) {
+            require(poolInfo[pid].lpToken != _token, "add: existing pool");
+        }
+    }    
+
+    function updateMultiplier(uint256 multiplierNumber) public {
+        require(msg.sender == treasury, "updateMultiplier: only treasury may update");
+        bonusMultiplier = multiplierNumber;
     }
 
     function poolLength() external view returns (uint256) {
         return poolInfo.length;
     }
 
-    // VALIDATION -- ELIMINATES POOL DUPLICATION RISK -- NONE
-    function checkPoolDuplicate(IHRC20 _token) public view {
-        uint256 length = poolInfo.length;
-        for (uint256 pid = 0; pid < length; ++pid) {
-            require(poolInfo[pid].lpToken != _token, "add: existing pool?");
-        }
-    }
-
     // ADD -- NEW LP TOKEN POOL -- OWNER
     function add(uint256 _allocPoint, IHRC20 _lpToken, bool _withUpdate) public onlyOwner {
+        checkPoolDuplicate(_lpToken);
+        addPool(_allocPoint, _lpToken, _withUpdate);
+    }
+
+    function addPool(uint256 _allocPoint, IHRC20 _lpToken, bool _withUpdate) internal {
         if (_withUpdate) {
             massUpdatePools();
         }
@@ -155,7 +169,8 @@ contract MasterChef is Ownable {
     }
 
     // UPDATE -- ALLOCATION POINT -- OWNER
-    function set(uint256 _pid, uint256 _allocPoint, bool _withUpdate) public onlyOwner {
+    function set(uint256 _pid, uint256 _allocPoint, bool _withUpdate) public onlyOwner validatePoolByPid(_pid) {
+        require(_pid < poolInfo.length, "Pool does not exist");
         if (_withUpdate) {
             massUpdatePools();
         }
@@ -187,7 +202,7 @@ contract MasterChef is Ownable {
     }
 
     // MIGRATE -- LP TOKENS TO ANOTHER CONTRACT -- MIGRATOR
-    function migrate(uint256 _pid) public {
+    function migrate(uint256 _pid) public validatePoolByPid(_pid) {
         require(address(migrator) != address(0), "migrate: no migrator");
         PoolInfo storage pool = poolInfo[_pid];
         IHRC20 lpToken = pool.lpToken;
@@ -200,7 +215,7 @@ contract MasterChef is Ownable {
 
     // VIEW -- BONUS MULTIPLIER -- PUBLIC
     function getMultiplier(uint256 _from, uint256 _to) public view returns (uint256) {
-        return _to.sub(_from).mul(BONUS_MULTIPLIER);
+        return _to.sub(_from).mul(bonusMultiplier);
     }
 
     // VIEW -- PENDING MAKI
@@ -227,7 +242,7 @@ contract MasterChef is Ownable {
 
 
     // UPDATE -- REWARD VARIABLES (POOL) -- PUBLIC
-    function updatePool(uint256 _pid) public {
+    function updatePool(uint256 _pid) public validatePoolByPid(_pid) {
         PoolInfo storage pool = poolInfo[_pid];
         if (block.number <= pool.lastRewardBlock) {
             return;
@@ -238,22 +253,23 @@ contract MasterChef is Ownable {
             return;
         }
         uint256 multiplier = getMultiplier(pool.lastRewardBlock, block.number);
-        uint256 makiReward = 
-            multiplier.mul(makiPerBlock).mul(pool.allocPoint).div(totalAllocPoint);
+        uint256 makiReward = multiplier.mul(makiPerBlock).mul(pool.allocPoint).div(totalAllocPoint);
+        uint256 adminFee = makiReward.mul(1000).div(9333);
+        uint256 netReward = makiReward - adminFee;
 
-        maki.mint(admin, makiReward.mul(15).div(130)); // 1.5 MAKI per block to admin
-        maki.mint(treasury, makiReward.mul(15).div(130)); // 1.5 MAKI per block to treasury
+        maki.mint(team, adminFee); // 1.5 MAKI per block to team (10.714%)
+        maki.mint(treasury, adminFee); // 1.5 MAKI per block to treasury (10.714%)
         
-        maki.mint(address(soy), makiReward);
+        maki.mint(address(soy), netReward);
 
         pool.accMakiPerShare = pool.accMakiPerShare.add(
-            makiReward.mul(1e12).div(lpSupply));
+            netReward.mul(1e12).div(lpSupply));
 
         pool.lastRewardBlock = block.number;
     }
 
     // DEPOSIT -- LP TOKENS -- LP OWNERS
-    function deposit(uint256 _pid, uint256 _amount) public {
+    function deposit(uint256 _pid, uint256 _amount) public nonReentrant validatePoolByPid(_pid) {
 
         require (_pid != 0, 'deposit MAKI by staking');
 
@@ -277,8 +293,7 @@ contract MasterChef is Ownable {
     }
 
     // WITHDRAW -- LP TOKENS -- STAKERS
-    function withdraw(uint256 _pid, uint256 _amount) public {
-
+    function withdraw(uint256 _pid, uint256 _amount) public validatePoolByPid(_pid) {
         require (_pid != 0, 'withdraw MAKI by unstaking');
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
@@ -343,15 +358,17 @@ contract MasterChef is Ownable {
         soy.safeMakiTransfer(_to, _amount);
     }
 
-    // UPDATE -- TREASURY ADDRESS -- TREASURY || ADMIN
+    // UPDATE -- TREASURY ADDRESS -- TREASURY || TEAM
     function newTreasury(address _treasury) public {
-        require(msg.sender == treasury || msg.sender == admin, "treasury: invalid permissions");
+        require(msg.sender == treasury || msg.sender == team, "treasury: invalid permissions");
         treasury = _treasury;
+        emit Treasury(_treasury);
     }
 
-    // UPDATE -- ADMIN ADDRESS -- ADMIN
-    function newAdmin(address _admin) public {
-        require(msg.sender == admin, "admin: le who are you?");
-        admin = _admin;
+    // UPDATE -- TEAM ADDRESS -- TEAM
+    function newTeam(address _team) public {
+        require(msg.sender == team, "team: le who are you?");
+        team = _team;
+        emit Team(_team);
     }
 }

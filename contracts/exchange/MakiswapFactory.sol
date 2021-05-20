@@ -1,34 +1,32 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity >=0.6.6;
+pragma solidity >=0.5.16;
 
-import 'makiswap-core/contracts/interfaces/IMakiswapFactory.sol';
-import 'makiswap-core/contracts/MakiswapPair.sol';
-import 'makiswap-core/contracts/MakiswapHRC20.sol';
+import './interfaces/IMakiswapFactory.sol';
+import './MakiswapPair.sol';
 
 contract MakiswapFactory is IMakiswapFactory {
-    address public override feeTo;
-    address public override feeToSetter;
+    address public feeTo;
+    address public feeToSetter;
     address public migrator;
+    uint256 public totalPairs = 0;
 
-    mapping(address => mapping(address => address)) public override getPair;
-    address[] public override allPairs;
+    mapping(address => mapping(address => address)) public getPair;
 
     event PairCreated(address indexed token0, address indexed token1, address pair, uint);
+    event SetFeeTo(address indexed user, address indexed _feeTo);
+    event SetMigrator(address indexed user, address indexed _migrator);
+    event FeeToSetter(address indexed user, address indexed _feetoSetter);
 
     constructor(address _feeToSetter) public {
         feeToSetter = _feeToSetter;
-    }
-
-    function allPairsLength() external override view returns (uint) {
-        return allPairs.length;
     }
 
     function pairCodeHash() external pure returns (bytes32) {
         return keccak256(type(MakiswapPair).creationCode);
     }
 
-    function createPair(address tokenA, address tokenB) external override returns (address pair) {
+    function createPair(address tokenA, address tokenB) external returns (address pair) {
         require(tokenA != tokenB, 'Makiswap: IDENTICAL_ADDRESSES');
         (address token0, address token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
         require(token0 != address(0), 'Makiswap: ZERO_ADDRESS');
@@ -41,23 +39,27 @@ contract MakiswapFactory is IMakiswapFactory {
         MakiswapPair(pair).initialize(token0, token1);
         getPair[token0][token1] = pair;
         getPair[token1][token0] = pair; // populate mapping in the reverse direction
-        allPairs.push(pair);
-        emit PairCreated(token0, token1, pair, allPairs.length);
+        totalPairs++;
+        emit PairCreated(token0, token1, pair, totalPairs);
     }
 
-    function setFeeTo(address _feeTo) external override {
+    function setFeeTo(address _feeTo) external {
         require(msg.sender == feeToSetter, 'Makiswap: FORBIDDEN');
         feeTo = _feeTo;
+        emit SetFeeTo(msg.sender, feeTo);
     }
 
     function setMigrator(address _migrator) external {
         require(msg.sender == feeToSetter, 'Makiswap: FORBIDDEN');
         migrator = _migrator;
+        emit SetMigrator(msg.sender, migrator);
+
     }
 
-    function setFeeToSetter(address _feeToSetter) external override {
+    function setFeeToSetter(address _feeToSetter) external {
         require(msg.sender == feeToSetter, 'Makiswap: FORBIDDEN');
         feeToSetter = _feeToSetter;
+        emit FeeToSetter(msg.sender, feeToSetter);
     }
 
 }

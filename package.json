@@ -5,16 +5,16 @@
   "scripts": {
     "migrate": "truffle migrate --reset",
     "compile": "truffle compile",
-    "flatten:exchange": "truffle-flattener contracts/exchange/MakiswapFactory.sol > checked/MakiswapFactory_flat.sol && truffle-flattener contracts/exchange/MakiswapRouter.sol > flats/MakiswapRouter_flat.sol",
-    "flatten:chefs": "truffle-flattener contracts/farm/MasterChef.sol > checked/MasterChef_flat.sol && truffle-flattener contracts/farm/SousChef.sol > flats/SousChef_flat.sol",
-    "flatten:tokens": "truffle-flattener contracts/farm/MakiToken.sol > checked//MakiToken_flat.sol && truffle-flattener contracts/farm/SoyBar.sol > flats/SoyBar_flat.sol "
+    "flat:exchange": "truffle-flattener contracts/exchange/MakiswapFactory.sol > checked/MakiswapFactory_flat.sol && truffle-flattener contracts/exchange/MakiswapRouter.sol > flats/MakiswapRouter_flat.sol",
+    "flat:chefs": "truffle-flattener contracts/farm/MasterChef.sol > checked/MasterChef_flat.sol && truffle-flattener contracts/farm/SousChef.sol > flats/SousChef_flat.sol",
+    "flat:tokens": "truffle-flattener contracts/farm/MakiToken.sol > checked//MakiToken_flat.sol && truffle-flattener contracts/farm/SoyBar.sol > flats/SoyBar_flat.sol "
   },
   "dependencies": {
+    "@openzeppelin/contracts": "3.4.0",
     "@openzeppelin/test-helpers": "^0.5.10",
-    "latest": "^0.2.0",
-    "maki-swap-lib": "^0.0.2",
-    "maki-swap-periphery": "^1.2.2",
-    "makiswap-core": "^0.1.3",
+    "maki-swap-lib": "^1.1.0",
+    "maki-swap-periphery": "^2.1.0",
+    "makiswap-core": "^3.0.0",
     "truffle": "^5.1.58",
     "truffle-flattener": "^1.4.4"
   },

@@ -5,11 +5,12 @@ pragma solidity =0.6.12;
 import "maki-swap-lib/contracts/math/SafeMath.sol";
 import "maki-swap-lib/contracts/token/HRC20/IHRC20.sol";
 import "maki-swap-lib/contracts/token/HRC20/SafeHRC20.sol";
+import '@openzeppelin/contracts/utils/ReentrancyGuard.sol';
 
 // import "@nomiclabs/buidler/console.sol";
 
 // SousChef is the chef of new tokens. She can make yummy food and she is a fair lady as well as MasterChef.
-contract SousChef {
+contract SousChef is ReentrancyGuard {
     using SafeMath for uint256;
     using SafeHRC20 for IHRC20;
 
@@ -141,7 +142,7 @@ contract SousChef {
     }
 
     // Deposit Soy tokens to SousChef for Reward allocation.
-    function deposit(uint256 _amount) public {
+    function deposit(uint256 _amount) public nonReentrant {
         require(_amount > 0, "amount 0");
         UserInfo storage user = userInfo[msg.sender];
         updatePool();
@@ -165,7 +166,7 @@ contract SousChef {
     }
 
     // Withdraw Soy tokens from SousChef.
-    function withdraw(uint256 _amount) public {
+    function withdraw(uint256 _amount) public nonReentrant {
         require(_amount > 0, "amount 0");
         UserInfo storage user = userInfo[msg.sender];
         require(user.amount >= _amount, "withdraw: not enough");
@@ -188,10 +189,11 @@ contract SousChef {
     // Withdraw without caring about rewards. EMERGENCY ONLY.
     function emergencyWithdraw() public {
         UserInfo storage user = userInfo[msg.sender];
-        soy.safeTransfer(address(msg.sender), user.amount);
-        emit EmergencyWithdraw(msg.sender, user.amount);
         user.amount = 0;
         user.rewardDebt = 0;
         user.rewardPending = 0;
+        soy.safeTransfer(address(msg.sender), user.amount);
+        
+        emit EmergencyWithdraw(msg.sender, user.amount);
     }
 }
