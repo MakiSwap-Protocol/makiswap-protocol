@@ -2,14 +2,8 @@
 
 pragma solidity >=0.5.0;
 
-//** LOCAL IMPORTS **//
-import '../interfaces/IMakiswapPair.sol';
-import "./SafeMath.sol";
-
-//** GLOBAL IMPORTS **//
-//  import 'makiswap-core/contracts/interfaces/IMakiswapPair.sol';
-//  import 'maki-swap-lib/contracts/math/SafeMath.sol';
-
+import 'makiswap-core/contracts/interfaces/IMakiswapPair.sol';
+import 'makiswap-core/contracts/libraries/SafeMath.sol';
 
 library MakiswapLibrary {
     using SafeMath for uint;
@@ -28,7 +22,7 @@ library MakiswapLibrary {
                 hex'ff',
                 factory,
                 keccak256(abi.encodePacked(token0, token1)),
-                hex'd0d4c4cd0848c93cb4fd1f498d7013ee6bfb25783ea21593d5834f5d250ece66' // init code hash
+                hex'dff84241dff24211d3b6da19070d0e26d4e2eaf0ad6036ae217dc0fff75581f0' // init code hash
             ))));
     }
 
@@ -79,7 +73,8 @@ library MakiswapLibrary {
 
     // performs chained getAmountIn calculations on any number of pairs
     function getAmountsIn(address factory, uint amountOut, address[] memory path) internal view returns (uint[] memory amounts) {
-        require(path.length >= 2, 'MakiswapLibrary: INVALID_PATH');
+        require(
+            path.length >= 2, 'MakiswapLibrary: INVALID_PATH');
         amounts = new uint[](path.length);
         amounts[amounts.length - 1] = amountOut;
         for (uint i = path.length - 1; i > 0; i--) {

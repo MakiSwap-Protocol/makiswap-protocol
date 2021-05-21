@@ -1,0 +1,1 @@
+[{"inputs":[{"internalType":"contract IHRC20","name":"token","type":"address"}],"name":"migrate","outputs":[{"internalType":"contract IHRC20","name":"","type":"address"}],"stateMutability":"nonpayable","type":"function"}]

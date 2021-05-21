@@ -2,8 +2,6 @@
 
 pragma solidity >=0.5.0 <0.8.0;
 
-// import 'makiswap-lib/contracts/math/SafeMath.sol';
-
 /**
  * @dev Wrappers over Solidity's arithmetic operations with added overflow
  * checks.
