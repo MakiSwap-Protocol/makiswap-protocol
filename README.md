@@ -72,3 +72,4 @@ ___
 - [MakiswapRouter.sol](https://testnet.hecoinfo.com/address/0x6BAF17e8D077011b22848EDbDB4fb6a511096508#code): 0x6BAF17e8D077011b22848EDbDB4fb6a511096508
 - [SoyBar.sol](https://testnet.hecoinfo.com/address/0xE318C623744Ea58Fc36c6d54C63cFd3e55482745#code): 0xE318C623744Ea58Fc36c6d54C63cFd3e55482745
 - [MasterChef.sol](https://testnet.hecoinfo.com/address/0xc83177C4Cc8a10E9595b8df24Da5925622ED09Eb#code): 0xc83177C4Cc8a10E9595b8df24Da5925622ED09Eb
+- [SousChef.sol](https://testnet.hecoinfo.com/address/0xE318C623744Ea58Fc36c6d54C63cFd3e55482745#code): 0xE318C623744Ea58Fc36c6d54C63cFd3e55482745
