@@ -76,7 +76,7 @@ contract MasterChef is Ownable, ReentrancyGuard {
     // ** GLOBAL VARIABLES ** //
 
     // MAKI tokens created per block.
-    uint256 public makiPerBlock = 16;
+    uint256 public makiPerBlock = 16e18; // 16 MAKI per block
     // Bonus muliplier for early maki makers.
     uint256 public bonusMultiplier = 1;
     // The block number when MAKI mining starts.
