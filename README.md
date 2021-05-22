@@ -66,9 +66,9 @@ ___
 - The schema of swap-lib, swap-core, and swap-periphery are modeled exactly like Pancakeswap, from which the repositories are forked and altered to meet the context of Huobi in lieu of Binance.
 
 ## Deployed Contracts (Testnet)
-- [MakiToken.sol](https://testnet.hecoinfo.com/address/0xAE91C07AC3208A766451e01EF4350A76dd2b7E54#code): 0xAE91C07AC3208A766451e01EF4350A76dd2b7E54
+- [MakiToken.sol](https://testnet.hecoinfo.com/address/0x6aDda9A700e4821E8d11016fdda73F8f344b3a8e#code): 0x6aDda9A700e4821E8d11016fdda73F8f344b3a8e
 - [MakiswapFactory.sol](https://testnet.hecoinfo.com/address/0xaa4f13E821aD5e0dF3B257D99BA12fd4618d9b26#code): 0xaa4f13E821aD5e0dF3B257D99BA12fd4618d9b26
     - `INIT_CODE_PAIR_HASH`: 0xcf5b20a7c8f9f999a04f5d25a7219dfb7aac456d5f8e07a8a9056ac3eb2ed012
 - [MakiswapRouter.sol](https://testnet.hecoinfo.com/address/0x6BAF17e8D077011b22848EDbDB4fb6a511096508#code): 0x6BAF17e8D077011b22848EDbDB4fb6a511096508
-- [SoyBar.sol](https://testnet.hecoinfo.com/address/0x799375230eE99A9c6d5ff1E315582887bc63e27e#code): 0x799375230eE99A9c6d5ff1E315582887bc63e27e
-- [MasterChef.sol](https://testnet.hecoinfo.com/address/0x2E138E5cAFfa287b4d96CD4b34A0Fb180Ae7eB84#code): 0x2E138E5cAFfa287b4d96CD4b34A0Fb180Ae7eB84
+- [SoyBar.sol](https://testnet.hecoinfo.com/address/0xE318C623744Ea58Fc36c6d54C63cFd3e55482745#code): 0xE318C623744Ea58Fc36c6d54C63cFd3e55482745
+- [MasterChef.sol](https://testnet.hecoinfo.com/address/0xc83177C4Cc8a10E9595b8df24Da5925622ED09Eb#code): 0xc83177C4Cc8a10E9595b8df24Da5925622ED09Eb
