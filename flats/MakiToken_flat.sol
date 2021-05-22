@@ -71,7 +71,7 @@ contract MakiToken {
     event Burn(address indexed burner, uint256 amount);
 
     /**
-     * @notice Construct a new Me token
+     * @notice Construct a new Maki token
      */
     constructor() public {
         balances[msg.sender] = uint96(totalSupply);

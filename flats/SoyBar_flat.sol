@@ -96,7 +96,6 @@ abstract contract Ownable is Context {
 // File: contracts/farm/MakiToken.sol
 
 pragma solidity ^0.6.12;
-pragma experimental ABIEncoderV2;
 
 contract MakiToken {
     /// @notice name for this token
@@ -166,7 +165,7 @@ contract MakiToken {
     event Burn(address indexed burner, uint256 amount);
 
     /**
-     * @notice Construct a new Me token
+     * @notice Construct a new Maki token
      */
     constructor() public {
         balances[msg.sender] = uint96(totalSupply);
@@ -512,6 +511,7 @@ contract MakiToken {
 // File: contracts/farm/SoyBar.sol
 
 pragma solidity =0.6.12;
+pragma experimental ABIEncoderV2;
 
 // SoyBar with Governance.
 contract SoyBar is Ownable {
@@ -528,6 +528,9 @@ contract SoyBar is Ownable {
     /// @notice Address which may mint new tokens
     address public minter = msg.sender;
 
+    /// @notice An event thats emitted when the minter address is changed
+    event MinterChanged(address minter, address newMinter);
+
     // Allowance amounts on behalf of others
     mapping (address => mapping (address => uint96)) internal allowances;
 
@@ -543,6 +546,16 @@ contract SoyBar is Ownable {
     event Approval(address indexed owner, address indexed spender, uint value);
     event Transfer(address indexed from, address indexed to, uint value);
     event Burn(address indexed burner, uint256 amount);
+    
+    /**
+     * @notice Change the minter address
+     * @param minter_ The address of the new minter
+     */
+    function setMinter(address minter_) external {
+        require(msg.sender == minter, "SOY::setMinter: only the minter can change the minter address");
+        emit MinterChanged(minter, minter_);
+        minter = minter_;
+    }
 
     /**
      * @notice Mint new tokens
@@ -814,7 +827,7 @@ contract SoyBar is Ownable {
      * @return The number of votes the account had as of the given block
      */
     function getPriorVotes(address account, uint blockNumber) public view returns (uint96) {
-        require(blockNumber < block.number, "MAKI::getPriorVotes: not yet determined");
+        require(blockNumber < block.number, "SOY::getPriorVotes: not yet determined");
 
         uint32 nCheckpoints = numCheckpoints[account];
         if (nCheckpoints == 0) {
