@@ -625,7 +625,7 @@ abstract contract ReentrancyGuard {
 
 // SPDX-License-Identifier: MIT
 
-pragma solidity =0.6.12;
+pragma solidity ^0.6.12;
 
 
 
@@ -811,7 +811,7 @@ contract SousChef is ReentrancyGuard {
     }
 
     // Withdraw without caring about rewards. EMERGENCY ONLY.
-    function emergencyWithdraw() public {
+    function emergencyWithdraw() public nonReentrant {
         UserInfo storage user = userInfo[msg.sender];
         user.amount = 0;
         user.rewardDebt = 0;

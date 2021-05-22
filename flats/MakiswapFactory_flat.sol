@@ -1,17 +1,18 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity >=0.5.0;
+// File: contracts/exchange/interfaces/IMakiswapFactory.sol
 
-// File: '/interfaces/IMakiswapFactory.sol';
+pragma solidity >=0.5.0;
 
 interface IMakiswapFactory {
     event PairCreated(address indexed token0, address indexed token1, address pair, uint);
     event SetFeeTo(address indexed user, address indexed _feeTo);
     event SetMigrator(address indexed user, address indexed _migrator);
-    event FeeToSetter(address indexed user, address indexed _feetoSetter);
+    event FeeToSetter(address indexed user, address indexed _feeToSetter);
 
-    function feeTo() external view returns (address);
-    function feeToSetter() external view returns (address);
+    function feeTo() external view returns (address _feeTo);
+    function feeToSetter() external view returns (address _feeToSetter);
+    function migrator() external view returns (address _migrator);
 
     function getPair(address tokenA, address tokenB) external view returns (address pair);
 
@@ -397,103 +398,24 @@ interface IMakiswapPair {
     function initialize(address, address) external;
 }
 
-// File: maki-swap-lib/contracts/token/HRC20/IHRC20.sol
+// File: makiswap-core/contracts/interfaces/IHRC20.sol
 
-pragma solidity >=0.4.0;
+pragma solidity >=0.5.0;
 
 interface IHRC20 {
-    /**
-     * @dev Returns the amount of tokens in existence.
-     */
-    function totalSupply() external view returns (uint256);
+    event Approval(address indexed owner, address indexed spender, uint value);
+    event Transfer(address indexed from, address indexed to, uint value);
 
-    /**
-     * @dev Returns the token decimals.
-     */
-    function decimals() external view returns (uint8);
-
-    /**
-     * @dev Returns the token symbol.
-     */
-    function symbol() external view returns (string memory);
-
-    /**
-     * @dev Returns the token name.
-     */
     function name() external view returns (string memory);
+    function symbol() external view returns (string memory);
+    function decimals() external view returns (uint8);
+    function totalSupply() external view returns (uint);
+    function balanceOf(address owner) external view returns (uint);
+    function allowance(address owner, address spender) external view returns (uint);
 
-    /**
-     * @dev Returns the HIP token owner.
-     */
-    function getOwner() external view returns (address);
-
-    /**
-     * @dev Returns the amount of tokens owned by `account`.
-     */
-    function balanceOf(address account) external view returns (uint256);
-
-    /**
-     * @dev Moves `amount` tokens from the caller's account to `recipient`.
-     *
-     * Returns a boolean value indicating whether the operation succeeded.
-     *
-     * Emits a {Transfer} event.
-     */
-    function transfer(address recipient, uint256 amount) external returns (bool);
-
-    /**
-     * @dev Returns the remaining number of tokens that `spender` will be
-     * allowed to spend on behalf of `owner` through {transferFrom}. This is
-     * zero by default.
-     *
-     * This value changes when {approve} or {transferFrom} are called.
-     */
-    function allowance(address _owner, address spender) external view returns (uint256);
-
-    /**
-     * @dev Sets `amount` as the allowance of `spender` over the caller's tokens.
-     *
-     * Returns a boolean value indicating whether the operation succeeded.
-     *
-     * IMPORTANT: Beware that changing an allowance with this method brings the risk
-     * that someone may use both the old and the new allowance by unfortunate
-     * transaction ordering. One possible solution to mitigate this race
-     * condition is to first reduce the spender's allowance to 0 and set the
-     * desired value afterwards:
-     * https://github.com/ethereum/EIPs/issues/20#issuecomment-263524729
-     *
-     * Emits an {Approval} event.
-     */
-    function approve(address spender, uint256 amount) external returns (bool);
-
-    /**
-     * @dev Moves `amount` tokens from `sender` to `recipient` using the
-     * allowance mechanism. `amount` is then deducted from the caller's
-     * allowance.
-     *
-     * Returns a boolean value indicating whether the operation succeeded.
-     *
-     * Emits a {Transfer} event.
-     */
-    function transferFrom(
-        address sender,
-        address recipient,
-        uint256 amount
-    ) external returns (bool);
-
-    /**
-     * @dev Emitted when `value` tokens are moved from one account (`from`) to
-     * another (`to`).
-     *
-     * Note that `value` may be zero.
-     */
-    event Transfer(address indexed from, address indexed to, uint256 value);
-
-    /**
-     * @dev Emitted when the allowance of a `spender` for an `owner` is set by
-     * a call to {approve}. `value` is the new allowance.
-     */
-    event Approval(address indexed owner, address indexed spender, uint256 value);
+    function approve(address spender, uint value) external returns (bool);
+    function transfer(address to, uint value) external returns (bool);
+    function transferFrom(address from, address to, uint value) external returns (bool);
 }
 
 // File: makiswap-core/contracts/libraries/UQ112x112.sol
@@ -652,7 +574,7 @@ contract MakiswapPair is IMakiswapPair, MakiswapHRC20 {
                 uint256 rootKLast = SafeMath.sqrt(_kLast);
                 if (rootK > rootKLast) {
                     uint256 numerator = totalSupply.mul(rootK.sub(rootKLast));
-                    uint256 denominator = rootK.mul(5).add(rootKLast);
+                    uint256 denominator = rootK.mul(3).add(rootKLast);
                     uint256 liquidity = numerator / denominator;
                     if (liquidity > 0) _mint(feeTo, liquidity);
                 }
@@ -819,13 +741,14 @@ contract MakiswapFactory is IMakiswapFactory {
     address public feeToSetter = msg.sender;
     address public migrator;
     uint256 public totalPairs = 0;
+    address[] public allPairs;
 
     mapping(address => mapping(address => address)) public getPair;
 
     event PairCreated(address indexed token0, address indexed token1, address pair, uint);
     event SetFeeTo(address indexed user, address indexed feeTo);
     event SetMigrator(address indexed user, address indexed migrator);
-    event FeeToSetter(address indexed user, address indexed feetoSetter);
+    event FeeToSetter(address indexed user, address indexed feeToSetter);
 
     function createPair(address tokenA, address tokenB) external returns (address pair) {
         require(tokenA != tokenB, 'Makiswap: IDENTICAL_ADDRESSES');
@@ -840,6 +763,7 @@ contract MakiswapFactory is IMakiswapFactory {
         MakiswapPair(pair).initialize(token0, token1);
         getPair[token0][token1] = pair;
         getPair[token1][token0] = pair; // populate mapping in the reverse direction
+        allPairs.push(pair);
         totalPairs++;
         emit PairCreated(token0, token1, pair, totalPairs);
     }

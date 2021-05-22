@@ -7,7 +7,7 @@ import "./interfaces/IMakiswapCallee.sol";
 import './interfaces/IMakiswapPair.sol';
 import "./interfaces/IMakiswapFactory.sol";
 
-import "maki-swap-lib/contracts/token/HRC20/IHRC20.sol";
+import 'makiswap-core/contracts/interfaces/IHRC20.sol';
 import "makiswap-core/contracts/libraries/UQ112x112.sol";
 
 interface IMigrator {
@@ -139,7 +139,7 @@ contract MakiswapPair is IMakiswapPair, MakiswapHRC20 {
                 uint256 rootKLast = SafeMath.sqrt(_kLast);
                 if (rootK > rootKLast) {
                     uint256 numerator = totalSupply.mul(rootK.sub(rootKLast));
-                    uint256 denominator = rootK.mul(5).add(rootKLast);
+                    uint256 denominator = rootK.mul(3).add(rootKLast);
                     uint256 liquidity = numerator / denominator;
                     if (liquidity > 0) _mint(feeTo, liquidity);
                 }

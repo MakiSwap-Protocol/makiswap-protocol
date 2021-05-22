@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity =0.6.12;
+pragma solidity ^0.6.12;
 
 import 'maki-swap-lib/contracts/math/SafeMath.sol';
-import 'maki-swap-lib/contracts/token/HRC20/IHRC20.sol';
 import 'maki-swap-lib/contracts/token/HRC20/SafeHRC20.sol';
-import 'maki-swap-lib/contracts/access/Ownable.sol';
+import '@openzeppelin/contracts/access/Ownable.sol';
 import '@openzeppelin/contracts/utils/ReentrancyGuard.sol';
 
 import "./MakiToken.sol";
@@ -53,7 +52,7 @@ contract MasterChef is Ownable, ReentrancyGuard {
 
     // Info of each pool.
     struct PoolInfo {
-        IHRC20 lpToken;           // Address of LP token contract.
+        address lpToken;           // Address of LP token contract.
         uint256 allocPoint;       // How many allocation points assigned to this pool. MAKIs to distribute per block.
         uint256 lastRewardBlock;  // Last block number that MAKIs distribution occurs.
         uint256 accMakiPerShare; // Accumulated MAKIs per share, times 1e12. See below.
@@ -67,9 +66,9 @@ contract MasterChef is Ownable, ReentrancyGuard {
     // The SOY TOKEN!
     SoyBar public soy;
     // Team address, which recieves 1.5 MAKI per block (mutable by team)
-    address public team;
-    // Treasury address, which recieves 1.5 MAKI per block (mutable by team and dev)
-    address public treasury;
+    address public team = msg.sender;
+    // Treasury address, which recieves 1.5 MAKI per block (mutable by team and treasury)
+    address public treasury = msg.sender;
     // The migrator contract. It has a lot of power. Can only be set through governance (owner).
     IMigratorChef public migrator;
 
@@ -77,11 +76,11 @@ contract MasterChef is Ownable, ReentrancyGuard {
     // ** GLOBAL VARIABLES ** //
 
     // MAKI tokens created per block.
-    uint256 public makiPerBlock;
+    uint256 public makiPerBlock = 16;
     // Bonus muliplier for early maki makers.
     uint256 public bonusMultiplier = 1;
     // The block number when MAKI mining starts.
-    uint256 public startBlock;
+    uint256 public startBlock = block.number;
     // Total allocation points. Must be the sum of all allocation points in all pools.
     uint256 public totalAllocPoint = 0;
     
@@ -100,22 +99,14 @@ contract MasterChef is Ownable, ReentrancyGuard {
 
     constructor(
         MakiToken _maki,
-        SoyBar _soy,
-        address _team,
-        address _treasury,
-        uint256 _makiPerBlock,
-        uint256 _startBlock
+        SoyBar _soy
     ) public {
         maki = _maki;
         soy = _soy;
-        team = _team;
-        treasury = _treasury;
-        makiPerBlock = _makiPerBlock;
-        startBlock = _startBlock;
 
         // staking pool
         poolInfo.push(PoolInfo({
-            lpToken: _maki,
+            lpToken: address(_maki),
             allocPoint: 1000,
             lastRewardBlock: startBlock,
             accMakiPerShare: 0
@@ -131,7 +122,7 @@ contract MasterChef is Ownable, ReentrancyGuard {
     }
 
     // VALIDATION -- ELIMINATES POOL DUPLICATION RISK -- NONE
-    function checkPoolDuplicate(IHRC20 _token) internal view {
+    function checkPoolDuplicate(address _token) internal view {
         uint256 length = poolInfo.length;
         for (uint256 pid = 0; pid < length; ++pid) {
             require(poolInfo[pid].lpToken != _token, "add: existing pool");
@@ -148,12 +139,12 @@ contract MasterChef is Ownable, ReentrancyGuard {
     }
 
     // ADD -- NEW LP TOKEN POOL -- OWNER
-    function add(uint256 _allocPoint, IHRC20 _lpToken, bool _withUpdate) public onlyOwner {
+    function add(uint256 _allocPoint, address _lpToken, bool _withUpdate) public onlyOwner {
         checkPoolDuplicate(_lpToken);
         addPool(_allocPoint, _lpToken, _withUpdate);
     }
 
-    function addPool(uint256 _allocPoint, IHRC20 _lpToken, bool _withUpdate) internal {
+    function addPool(uint256 _allocPoint, address _lpToken, bool _withUpdate) internal {
         if (_withUpdate) {
             massUpdatePools();
         }
@@ -205,12 +196,12 @@ contract MasterChef is Ownable, ReentrancyGuard {
     function migrate(uint256 _pid) public validatePoolByPid(_pid) {
         require(address(migrator) != address(0), "migrate: no migrator");
         PoolInfo storage pool = poolInfo[_pid];
-        IHRC20 lpToken = pool.lpToken;
-        uint256 bal = lpToken.balanceOf(address(this));
-        lpToken.safeApprove(address(migrator), bal);
-        IHRC20 newLpToken = migrator.migrate(lpToken);
+        address lpToken = pool.lpToken;
+        uint256 bal = IHRC20(lpToken).balanceOf(address(this));
+        IHRC20(lpToken).safeApprove(address(migrator), bal);
+        IHRC20 newLpToken = migrator.migrate(IHRC20(lpToken));
         require(bal == newLpToken.balanceOf(address(this)), "migrate: bad");
-        pool.lpToken = newLpToken;
+        pool.lpToken = address(newLpToken);
     }
 
     // VIEW -- BONUS MULTIPLIER -- PUBLIC
@@ -223,7 +214,7 @@ contract MasterChef is Ownable, ReentrancyGuard {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][_user];
         uint256 accMakiPerShare = pool.accMakiPerShare;
-        uint256 lpSupply = pool.lpToken.balanceOf(address(this));
+        uint256 lpSupply = IHRC20(pool.lpToken).balanceOf(address(this));
         if (block.number > pool.lastRewardBlock && lpSupply != 0) {
             uint256 multiplier = getMultiplier(pool.lastRewardBlock, block.number);
             uint256 makiReward = multiplier.mul(makiPerBlock).mul(pool.allocPoint).div(totalAllocPoint);
@@ -240,14 +231,13 @@ contract MasterChef is Ownable, ReentrancyGuard {
         }
     }
 
-
     // UPDATE -- REWARD VARIABLES (POOL) -- PUBLIC
     function updatePool(uint256 _pid) public validatePoolByPid(_pid) {
         PoolInfo storage pool = poolInfo[_pid];
         if (block.number <= pool.lastRewardBlock) {
             return;
         }
-        uint256 lpSupply = pool.lpToken.balanceOf(address(this));
+        uint256 lpSupply = IHRC20(pool.lpToken).balanceOf(address(this));
         if (lpSupply == 0) {
             pool.lastRewardBlock = block.number;
             return;
@@ -255,7 +245,7 @@ contract MasterChef is Ownable, ReentrancyGuard {
         uint256 multiplier = getMultiplier(pool.lastRewardBlock, block.number);
         uint256 makiReward = multiplier.mul(makiPerBlock).mul(pool.allocPoint).div(totalAllocPoint);
         uint256 adminFee = makiReward.mul(1000).div(9333);
-        uint256 netReward = makiReward - adminFee;
+        uint256 netReward = makiReward.sub(adminFee.mul(2));
 
         maki.mint(team, adminFee); // 1.5 MAKI per block to team (10.714%)
         maki.mint(treasury, adminFee); // 1.5 MAKI per block to treasury (10.714%)
@@ -285,7 +275,7 @@ contract MasterChef is Ownable, ReentrancyGuard {
         }
 
         if (_amount > 0) { // if adding more
-            pool.lpToken.safeTransferFrom(address(msg.sender), address(this), _amount);
+            IHRC20(pool.lpToken).safeTransferFrom(address(msg.sender), address(this), _amount);
             user.amount = user.amount.add(_amount);
         }
         user.rewardDebt = user.amount.mul(pool.accMakiPerShare).div(1e12);
@@ -293,7 +283,7 @@ contract MasterChef is Ownable, ReentrancyGuard {
     }
 
     // WITHDRAW -- LP TOKENS -- STAKERS
-    function withdraw(uint256 _pid, uint256 _amount) public validatePoolByPid(_pid) {
+    function withdraw(uint256 _pid, uint256 _amount) public nonReentrant validatePoolByPid(_pid) {
         require (_pid != 0, 'withdraw MAKI by unstaking');
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
@@ -306,14 +296,14 @@ contract MasterChef is Ownable, ReentrancyGuard {
         }
         if(_amount > 0) {
             user.amount = user.amount.sub(_amount);
-            pool.lpToken.safeTransfer(address(msg.sender), _amount);
+            IHRC20(pool.lpToken).safeTransfer(address(msg.sender), _amount);
         }
         user.rewardDebt = user.amount.mul(pool.accMakiPerShare).div(1e12);
         emit Withdraw(msg.sender, _pid, _amount);
     }
 
     // STAKE -- MAKI TO MASTERCHEF -- PUBLIC MAKI HOLDERS
-    function enterStaking(uint256 _amount) public {
+    function enterStaking(uint256 _amount) public nonReentrant {
         PoolInfo storage pool = poolInfo[0];
         UserInfo storage user = userInfo[0][msg.sender];
         updatePool(0);
@@ -324,7 +314,7 @@ contract MasterChef is Ownable, ReentrancyGuard {
             }
         }
         if(_amount > 0) {
-            pool.lpToken.safeTransferFrom(address(msg.sender), address(this), _amount);
+            IHRC20(pool.lpToken).safeTransferFrom(address(msg.sender), address(this), _amount);
             user.amount = user.amount.add(_amount);
         }
         user.rewardDebt = user.amount.mul(pool.accMakiPerShare).div(1e12);
@@ -334,7 +324,7 @@ contract MasterChef is Ownable, ReentrancyGuard {
     }
 
     // WITHDRAW -- MAKI tokens from STAKING.
-    function leaveStaking(uint256 _amount) public {
+    function leaveStaking(uint256 _amount) public nonReentrant {
         PoolInfo storage pool = poolInfo[0];
         UserInfo storage user = userInfo[0][msg.sender];
         require(user.amount >= _amount, "withdraw: not good");
@@ -345,11 +335,11 @@ contract MasterChef is Ownable, ReentrancyGuard {
         }
         if(_amount > 0) {
             user.amount = user.amount.sub(_amount);
-            pool.lpToken.safeTransfer(address(msg.sender), _amount);
+            IHRC20(pool.lpToken).safeTransfer(address(msg.sender), _amount);
         }
         user.rewardDebt = user.amount.mul(pool.accMakiPerShare).div(1e12);
 
-        soy.burn(msg.sender, _amount);
+        soy.burn(_amount);
         emit Withdraw(msg.sender, 0, _amount);
     }
 

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity =0.6.12;
+pragma solidity ^0.6.12;
 
 import "maki-swap-lib/contracts/math/SafeMath.sol";
 import "maki-swap-lib/contracts/token/HRC20/IHRC20.sol";
@@ -187,7 +187,7 @@ contract SousChef is ReentrancyGuard {
     }
 
     // Withdraw without caring about rewards. EMERGENCY ONLY.
-    function emergencyWithdraw() public {
+    function emergencyWithdraw() public nonReentrant {
         UserInfo storage user = userInfo[msg.sender];
         user.amount = 0;
         user.rewardDebt = 0;

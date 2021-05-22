@@ -10096,41 +10096,26 @@ make-dir@^1.0.0, make-dir@^1.2.0:
   dependencies:
     pify "^3.0.0"
 
-maki-swap-lib@^0.1.1:
-  version "0.1.1"
-  resolved "https://registry.yarnpkg.com/maki-swap-lib/-/maki-swap-lib-0.1.1.tgz#23b2576d8cf03abd6e1b66071e4f24665e156206"
-  integrity sha512-wQIeoDqaaoj7KoRRefF6JmTapHicbIl9Gjyqpi6u06DajeEEe8KjMVq99ShV1wVNCUziHyBWbFwZzQaKBl2zUg==
-
-maki-swap-lib@^2.0.0:
-  version "2.0.0"
-  resolved "https://registry.yarnpkg.com/maki-swap-lib/-/maki-swap-lib-2.0.0.tgz#f03d5820e84be0191c3165352ff1bb1247bffe23"
-  integrity sha512-3IcTHlObUy7Vot7r0FecVhXjCWZ85aaQYRY2VCl4kUrAbI6CZmdrsMpikgbDizEcX0yoqZSyP0omqgvlcrmbSA==
-
-maki-swap-periphery@^2.1.0:
+maki-swap-lib@^2.1.0:
   version "2.1.0"
-  resolved "https://registry.yarnpkg.com/maki-swap-periphery/-/maki-swap-periphery-2.1.0.tgz#4d4b0eba0c1d11b1b478c8d7758491bfc88c09e7"
-  integrity sha512-y8akasWUa5wScz9VRBG4NmleXzyUZtwLX1UHlidiAa1FR6gkbJM8Mtu+8NWvOPml4DOr1rWxce/aTpExXFY8IQ==
+  resolved "https://registry.yarnpkg.com/maki-swap-lib/-/maki-swap-lib-2.1.0.tgz#7af21c80969aac1f6be336de0a8971b6a5bbfbb6"
+  integrity sha512-cNnCbwB3xz0Sk/YjEo/qIwooguwyVQZZR0LtvRlqG/usBVfqb0+COWjv6EHHoDqsn/H1P3XGAsifZLdZ6aEMbA==
+
+maki-swap-periphery@^3.1.0:
+  version "3.1.0"
+  resolved "https://registry.yarnpkg.com/maki-swap-periphery/-/maki-swap-periphery-3.1.0.tgz#d70adf3ec3abe7378e9665646612e41ce2ab1f2e"
+  integrity sha512-OtY82ZweBy6kMLT0Io3eGJRNBS8DGGhWyuq6ekT2zMYTgui5fQxBiXn6WgkRq+fL+MuevC7DPMhSdQu7tna9rQ==
   dependencies:
-    maki-swap-lib "^0.1.1"
-    makiswap-core "^2.0.0"
+    maki-swap-lib "^2.1.0"
+    makiswap-core "^4.1.0"
     truffle-flattener "^1.5.0"
     truffle-hdwallet-provider "^1.0.17"
     truffle-plugin-verify "^0.4.0"
 
-makiswap-core@^2.0.0:
-  version "2.0.0"
-  resolved "https://registry.yarnpkg.com/makiswap-core/-/makiswap-core-2.0.0.tgz#f7f66e59cbc2c209c2ca4bf4067fecd455a46adc"
-  integrity sha512-yLL31i0hrQ1iScQTmNt0N4MX/JMrZBPEbfJuhuUvq51Jm2i216smc6VRmOmQEAhyTXWiAieRH2oCXonJ1y3zxA==
-  dependencies:
-    truffle "^5.2.6"
-    truffle-flattener "^1.4.4"
-    truffle-hdwallet-provider "^1.0.17"
-    truffle-verify "^1.0.8"
-
-makiswap-core@^3.0.0:
-  version "3.0.0"
-  resolved "https://registry.yarnpkg.com/makiswap-core/-/makiswap-core-3.0.0.tgz#192ca57bd31592325cfa400a3e349697e06ab0ed"
-  integrity sha512-NA1/VrasEefcIJLbfQfZTKc/thSu2wSRpENsvJCsbiXUoIQDVLvvaiMWzHHMa5KdmSeFhDpefY0kN0C0KGezVA==
+makiswap-core@^4.1.0:
+  version "4.1.0"
+  resolved "https://registry.yarnpkg.com/makiswap-core/-/makiswap-core-4.1.0.tgz#1737b7aaf6bd2771891a40f6e60c9bed2f32abd4"
+  integrity sha512-ydNSq971rTzS4JNYC3pnd3lQmCNKz6Td6jafVbzir8k8nQfgcpVv6+jHAjru3sZQ9YuIVa0JVfWEtu8twKXGgA==
   dependencies:
     truffle "^5.2.6"
     truffle-flattener "^1.4.4"
