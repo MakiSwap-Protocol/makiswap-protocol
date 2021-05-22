@@ -22,7 +22,7 @@ library MakiswapLibrary {
                 hex'ff',
                 factory,
                 keccak256(abi.encodePacked(token0, token1)),
-                hex'dff84241dff24211d3b6da19070d0e26d4e2eaf0ad6036ae217dc0fff75581f0' // init code hash
+                hex'cf5b20a7c8f9f999a04f5d25a7219dfb7aac456d5f8e07a8a9056ac3eb2ed012' // init code hash
             ))));
     }
 

@@ -48,7 +48,7 @@ ___
 ___
 
 - **Interfaces Directory**: includes the interfaces referenced in the main smart contracts for each respective sub-section.
-- **Token Directory**: includse the smart contracts for that are inherited by the MakiToken.sol, namely HRC20.sol and SafeHRC20.sol, which are designed to mirror the OZ smart contracts for the ERC equivalents.
+- **Token Directory**: includes the smart contracts that are inherited by the MakiToken.sol, namely HRC20.sol and SafeHRC20.sol, which are designed to mirror the OZ smart contracts for the ERC equivalents.
 ___
 ## Flats and Libraries
 ___
@@ -66,6 +66,9 @@ ___
 - The schema of swap-lib, swap-core, and swap-periphery are modeled exactly like Pancakeswap, from which the repositories are forked and altered to meet the context of Huobi in lieu of Binance.
 
 ## Deployed Contracts (Testnet)
-- [MakiToken.sol](https://testnet.hecoinfo.com/address/0x0406c65B0455f59d875f78F5aCBf9a79Be3e2593#code): 0x0406c65B0455f59d875f78F5aCBf9a79Be3e2593
-- [MakiswapFactory.sol](https://testnet.hecoinfo.com/address/0x315db589224D14bDe6e0dEa5C685214aF7997225#code): 0x315db589224D14bDe6e0dEa5C685214aF7997225
-- [MakiswapRouter.sol](https://testnet.hecoinfo.com/address/0x81b1Ef172856930A670023eedAF98Fb7E061d230#code): 0x81b1Ef172856930A670023eedAF98Fb7E061d230
+- [MakiToken.sol](https://testnet.hecoinfo.com/address/0x149E5bAfCa6B1654f346c61765a4452c98BE95C7#code): 0x149E5bAfCa6B1654f346c61765a4452c98BE95C7
+- [MakiswapFactory.sol](https://testnet.hecoinfo.com/address/0xaa4f13E821aD5e0dF3B257D99BA12fd4618d9b26#code): 0xaa4f13E821aD5e0dF3B257D99BA12fd4618d9b26
+    - `INIT_CODE_PAIR_HASH`: 0xcf5b20a7c8f9f999a04f5d25a7219dfb7aac456d5f8e07a8a9056ac3eb2ed012
+- [MakiswapRouter.sol](https://testnet.hecoinfo.com/address/0x6BAF17e8D077011b22848EDbDB4fb6a511096508#code): 0x6BAF17e8D077011b22848EDbDB4fb6a511096508
+- [SoyBar.sol](https://testnet.hecoinfo.com/address/0x7774e1117c9743Ed27116b835C2E6ee57034C2c8#code): 0x7774e1117c9743Ed27116b835C2E6ee57034C2c8
+- [MasterChef.sol](https://testnet.hecoinfo.com/address/0x8fF751c887B12b892a890c88f73c21528F87b545#code): 0x8fF751c887B12b892a890c88f73c21528F87b545

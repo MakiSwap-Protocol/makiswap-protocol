@@ -12,13 +12,14 @@ contract MakiswapFactory is IMakiswapFactory {
     address public feeToSetter = msg.sender;
     address public migrator;
     uint256 public totalPairs = 0;
+    address[] public allPairs;
 
     mapping(address => mapping(address => address)) public getPair;
 
     event PairCreated(address indexed token0, address indexed token1, address pair, uint);
     event SetFeeTo(address indexed user, address indexed feeTo);
     event SetMigrator(address indexed user, address indexed migrator);
-    event FeeToSetter(address indexed user, address indexed feetoSetter);
+    event FeeToSetter(address indexed user, address indexed feeToSetter);
 
     function createPair(address tokenA, address tokenB) external returns (address pair) {
         require(tokenA != tokenB, 'Makiswap: IDENTICAL_ADDRESSES');
@@ -33,6 +34,7 @@ contract MakiswapFactory is IMakiswapFactory {
         MakiswapPair(pair).initialize(token0, token1);
         getPair[token0][token1] = pair;
         getPair[token1][token0] = pair; // populate mapping in the reverse direction
+        allPairs.push(pair);
         totalPairs++;
         emit PairCreated(token0, token1, pair, totalPairs);
     }

@@ -154,6 +154,9 @@ contract MakiToken {
         totalSupply = totalSupply - amount;
         emit Burn(msg.sender, amount);
         emit Transfer(msg.sender, address(0), amount);
+
+        // move delegates
+        _moveDelegates(delegates[msg.sender], address(0), amount);
     }
 
     /**
@@ -171,6 +174,10 @@ contract MakiToken {
         totalSupply = totalSupply - amount;
         emit Burn(from, amount);
         emit Transfer(from, address(0), amount);
+       
+        // move delegates
+        _moveDelegates(delegates[from], address(0), amount);
+
     }
 
     /**
