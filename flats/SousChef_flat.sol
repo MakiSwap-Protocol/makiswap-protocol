@@ -1,8 +1,8 @@
-// File: maki-swap-lib/contracts/math/SafeMath.sol
-
 // SPDX-License-Identifier: MIT
 
 pragma solidity >=0.5.0 <0.8.0;
+
+// File: maki-swap-lib/contracts/math/SafeMath.sol
 
 /**
  * @dev Wrappers over Solidity's arithmetic operations with added overflow
@@ -192,8 +192,6 @@ library SafeMath {
 
 // File: maki-swap-lib/contracts/token/HRC20/IHRC20.sol
 
-// SPDX-License-Identifier: GPL-3.0-or-later
-
 pragma solidity >=0.4.0;
 
 interface IHRC20 {
@@ -292,8 +290,6 @@ interface IHRC20 {
 }
 
 // File: maki-swap-lib/contracts/utils/Address.sol
-
-// SPDX-License-Identifier: MIT
 
 pragma solidity ^0.6.2;
 
@@ -457,12 +453,7 @@ library Address {
 
 // File: maki-swap-lib/contracts/token/HRC20/SafeHRC20.sol
 
-// SPDX-License-Identifier: MIT
-
 pragma solidity >=0.6.0;
-
-
-
 
 /**
  * @title SafeHRC20
@@ -558,8 +549,6 @@ library SafeHRC20 {
 
 // File: @openzeppelin/contracts/utils/ReentrancyGuard.sol
 
-// SPDX-License-Identifier: MIT
-
 pragma solidity >=0.6.0 <0.8.0;
 
 /**
@@ -623,13 +612,7 @@ abstract contract ReentrancyGuard {
 
 // File: contracts/farm/SousChef.sol
 
-// SPDX-License-Identifier: MIT
-
 pragma solidity ^0.6.12;
-
-
-
-
 
 // import "@nomiclabs/buidler/console.sol";
 
@@ -666,7 +649,7 @@ contract SousChef is ReentrancyGuard {
     // The SOY TOKEN!
     IHRC20 public soy;
     // rewards created per block.
-    uint256 public rewardPerBlock;
+    uint256 public rewardPerBlock = 16e18;
 
     // Info.
     PoolInfo public poolInfo;
@@ -686,15 +669,10 @@ contract SousChef is ReentrancyGuard {
     event EmergencyWithdraw(address indexed user, uint256 amount);
 
     constructor(
-        IHRC20 _soy,
-        uint256 _rewardPerBlock,
-        uint256 _startBlock,
-        uint256 _endBlock
+        IHRC20 _soy
     ) public {
         soy = _soy;
-        rewardPerBlock = _rewardPerBlock;
-        startBlock = _startBlock;
-        bonusEndBlock = _endBlock;
+
 
         // staking pool
         poolInfo = PoolInfo({
@@ -729,8 +707,7 @@ contract SousChef is ReentrancyGuard {
         uint256 accRewardPerShare = pool.accRewardPerShare;
         uint256 stakedSupply = soy.balanceOf(address(this));
         if (block.number > pool.lastRewardBlock && stakedSupply != 0) {
-            uint256 multiplier =
-                getMultiplier(pool.lastRewardBlock, block.number);
+            uint256 multiplier = 1;
             uint256 tokenReward = multiplier.mul(rewardPerBlock);
             accRewardPerShare = accRewardPerShare.add(
                 tokenReward.mul(1e12).div(stakedSupply)
@@ -755,8 +732,7 @@ contract SousChef is ReentrancyGuard {
             poolInfo.lastRewardBlock = block.number;
             return;
         }
-        uint256 multiplier =
-            getMultiplier(poolInfo.lastRewardBlock, block.number);
+        uint256 multiplier = 1;
         uint256 tokenReward = multiplier.mul(rewardPerBlock);
 
         poolInfo.accRewardPerShare = poolInfo.accRewardPerShare.add(

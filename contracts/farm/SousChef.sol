@@ -42,7 +42,7 @@ contract SousChef is ReentrancyGuard {
     // The SOY TOKEN!
     IHRC20 public soy;
     // rewards created per block.
-    uint256 public rewardPerBlock;
+    uint256 public rewardPerBlock = 16e18;
 
     // Info.
     PoolInfo public poolInfo;
@@ -53,24 +53,17 @@ contract SousChef is ReentrancyGuard {
     address[] public addressList;
 
     // The block number when mining starts.
-    uint256 public startBlock;
-    // The block number when mining ends.
-    uint256 public bonusEndBlock;
+    uint256 public startBlock = block.number;
+
 
     event Deposit(address indexed user, uint256 amount);
     event Withdraw(address indexed user, uint256 amount);
     event EmergencyWithdraw(address indexed user, uint256 amount);
 
     constructor(
-        IHRC20 _soy,
-        uint256 _rewardPerBlock,
-        uint256 _startBlock,
-        uint256 _endBlock
+        IHRC20 _soy
     ) public {
         soy = _soy;
-        rewardPerBlock = _rewardPerBlock;
-        startBlock = _startBlock;
-        bonusEndBlock = _endBlock;
 
         // staking pool
         poolInfo = PoolInfo({
@@ -83,20 +76,6 @@ contract SousChef is ReentrancyGuard {
         return addressList.length;
     }
 
-    // Return reward multiplier over the given _from to _to block.
-    function getMultiplier(uint256 _from, uint256 _to)
-        internal
-        view
-        returns (uint256)
-    {
-        if (_to <= bonusEndBlock) {
-            return _to.sub(_from);
-        } else if (_from >= bonusEndBlock) {
-            return 0;
-        } else {
-            return bonusEndBlock.sub(_from);
-        }
-    }
 
     // View function to see pending Tokens on frontend.
     function pendingReward(address _user) external view returns (uint256) {
@@ -105,8 +84,7 @@ contract SousChef is ReentrancyGuard {
         uint256 accRewardPerShare = pool.accRewardPerShare;
         uint256 stakedSupply = soy.balanceOf(address(this));
         if (block.number > pool.lastRewardBlock && stakedSupply != 0) {
-            uint256 multiplier =
-                getMultiplier(pool.lastRewardBlock, block.number);
+            uint256 multiplier = 1;
             uint256 tokenReward = multiplier.mul(rewardPerBlock);
             accRewardPerShare = accRewardPerShare.add(
                 tokenReward.mul(1e12).div(stakedSupply)
@@ -131,8 +109,7 @@ contract SousChef is ReentrancyGuard {
             poolInfo.lastRewardBlock = block.number;
             return;
         }
-        uint256 multiplier =
-            getMultiplier(poolInfo.lastRewardBlock, block.number);
+        uint256 multiplier = 1;
         uint256 tokenReward = multiplier.mul(rewardPerBlock);
 
         poolInfo.accRewardPerShare = poolInfo.accRewardPerShare.add(
