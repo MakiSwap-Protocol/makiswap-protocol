@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity >=0.5.0 <0.8.0;
+pragma solidity ^0.6.12;
 
 // File: maki-swap-lib/contracts/math/SafeMath.sol
 
@@ -649,7 +649,7 @@ contract SousChef is ReentrancyGuard {
     // The SOY TOKEN!
     IHRC20 public soy;
     // rewards created per block.
-    uint256 public rewardPerBlock = 16e18;
+    uint256 public rewardPerBlock = 16e18; // 16 SOY per block
 
     // Info.
     PoolInfo public poolInfo;
@@ -660,9 +660,9 @@ contract SousChef is ReentrancyGuard {
     address[] public addressList;
 
     // The block number when mining starts.
-    uint256 public startBlock;
+    uint256 public startBlock = block.number;
     // The block number when mining ends.
-    uint256 public bonusEndBlock;
+    uint256 public bonusEndBlock = type(uint256).max; // endless
 
     event Deposit(address indexed user, uint256 amount);
     event Withdraw(address indexed user, uint256 amount);
@@ -672,7 +672,6 @@ contract SousChef is ReentrancyGuard {
         IHRC20 _soy
     ) public {
         soy = _soy;
-
 
         // staking pool
         poolInfo = PoolInfo({
@@ -707,7 +706,8 @@ contract SousChef is ReentrancyGuard {
         uint256 accRewardPerShare = pool.accRewardPerShare;
         uint256 stakedSupply = soy.balanceOf(address(this));
         if (block.number > pool.lastRewardBlock && stakedSupply != 0) {
-            uint256 multiplier = 1;
+            uint256 multiplier =
+                getMultiplier(pool.lastRewardBlock, block.number);
             uint256 tokenReward = multiplier.mul(rewardPerBlock);
             accRewardPerShare = accRewardPerShare.add(
                 tokenReward.mul(1e12).div(stakedSupply)
@@ -732,7 +732,8 @@ contract SousChef is ReentrancyGuard {
             poolInfo.lastRewardBlock = block.number;
             return;
         }
-        uint256 multiplier = 1;
+        uint256 multiplier =
+            getMultiplier(poolInfo.lastRewardBlock, block.number);
         uint256 tokenReward = multiplier.mul(rewardPerBlock);
 
         poolInfo.accRewardPerShare = poolInfo.accRewardPerShare.add(

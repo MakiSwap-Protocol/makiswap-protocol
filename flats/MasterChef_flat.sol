@@ -703,40 +703,345 @@ abstract contract ReentrancyGuard {
     }
 }
 
+// File: maki-swap-lib/contracts/token/HRC20/HRC20.sol
+
+pragma solidity >=0.4.0;
+
+/**
+ * @dev Implementation of the {IHRC20} interface.
+ *
+ * This implementation is agnostic to the way tokens are created. This means
+ * that a supply mechanism has to be added in a derived contract using {_mint}.
+ * For a generic mechanism see {HRC20PresetMinterPauser}.
+ *
+ * TIP: For a detailed writeup see our guide
+ * https://forum.zeppelin.solutions/t/how-to-implement-HRC20-supply-mechanisms/226[How
+ * to implement supply mechanisms].
+ *
+ * We have followed general OpenZeppelin guidelines: functions revert instead
+ * of returning `false` on failure. This behavior is nonetheless conventional
+ * and does not conflict with the expectations of HRC20 applications.
+ *
+ * Additionally, an {Approval} event is emitted on calls to {transferFrom}.
+ * This allows applications to reconstruct the allowance for all accounts just
+ * by listening to said events. Other implementations of the EIP may not emit
+ * these events, as it isn't required by the specification.
+ *
+ * Finally, the non-standard {decreaseAllowance} and {increaseAllowance}
+ * functions have been added to mitigate the well-known issues around setting
+ * allowances. See {IHRC20-approve}.
+ */
+contract HRC20 is Context, IHRC20, Ownable {
+    using SafeMath for uint256;
+    using Address for address;
+
+    mapping(address => uint256) private _balances;
+
+    mapping(address => mapping(address => uint256)) private _allowances;
+
+    uint256 private _totalSupply;
+
+    string private _name;
+    string private _symbol;
+    uint8 private _decimals;
+
+    /**
+     * @dev Sets the values for {name} and {symbol}, initializes {decimals} with
+     * a default value of 18.
+     *
+     * To select a different value for {decimals}, use {_setupDecimals}.
+     *
+     * All three of these values are immutable: they can only be set once during
+     * construction.
+     */
+    constructor(string memory name, string memory symbol) public {
+        _name = name;
+        _symbol = symbol;
+        _decimals = 18;
+    }
+
+    /**
+     * @dev Returns the HRC token owner.
+     */
+    function getOwner() external view override returns (address) {
+        return owner();
+    }
+
+    /**
+     * @dev Returns the token name.
+     */
+    function name() public override view returns (string memory) {
+        return _name;
+    }
+
+    /**
+     * @dev Returns the token decimals.
+     */
+    function decimals() public override view returns (uint8) {
+        return _decimals;
+    }
+
+    /**
+     * @dev Returns the token symbol.
+     */
+    function symbol() public override view returns (string memory) {
+        return _symbol;
+    }
+
+    /**
+     * @dev See {HRC20-totalSupply}.
+     */
+    function totalSupply() public override view returns (uint256) {
+        return _totalSupply;
+    }
+
+    /**
+     * @dev See {HRC20-balanceOf}.
+     */
+    function balanceOf(address account) public override view returns (uint256) {
+        return _balances[account];
+    }
+
+    /**
+     * @dev See {HRC20-transfer}.
+     *
+     * Requirements:
+     *
+     * - `recipient` cannot be the zero address.
+     * - the caller must have a balance of at least `amount`.
+     */
+    function transfer(address recipient, uint256 amount) public override returns (bool) {
+        _transfer(_msgSender(), recipient, amount);
+        return true;
+    }
+
+    /**
+     * @dev See {HRC20-allowance}.
+     */
+    function allowance(address owner, address spender) public override view returns (uint256) {
+        return _allowances[owner][spender];
+    }
+
+    /**
+     * @dev See {HRC20-approve}.
+     *
+     * Requirements:
+     *
+     * - `spender` cannot be the zero address.
+     */
+    function approve(address spender, uint256 amount) public override returns (bool) {
+        _approve(_msgSender(), spender, amount);
+        return true;
+    }
+
+    /**
+     * @dev See {HRC20-transferFrom}.
+     *
+     * Emits an {Approval} event indicating the updated allowance. This is not
+     * required by the EIP. See the note at the beginning of {HRC20};
+     *
+     * Requirements:
+     * - `sender` and `recipient` cannot be the zero address.
+     * - `sender` must have a balance of at least `amount`.
+     * - the caller must have allowance for `sender`'s tokens of at least
+     * `amount`.
+     */
+    function transferFrom(
+        address sender,
+        address recipient,
+        uint256 amount
+    ) public override returns (bool) {
+        _transfer(sender, recipient, amount);
+        _approve(
+            sender,
+            _msgSender(),
+            _allowances[sender][_msgSender()].sub(amount, 'HRC20: transfer amount exceeds allowance')
+        );
+        return true;
+    }
+
+    /**
+     * @dev Atomically increases the allowance granted to `spender` by the caller.
+     *
+     * This is an alternative to {approve} that can be used as a mitigation for
+     * problems described in {HRC20-approve}.
+     *
+     * Emits an {Approval} event indicating the updated allowance.
+     *
+     * Requirements:
+     *
+     * - `spender` cannot be the zero address.
+     */
+    function increaseAllowance(address spender, uint256 addedValue) public returns (bool) {
+        _approve(_msgSender(), spender, _allowances[_msgSender()][spender].add(addedValue));
+        return true;
+    }
+
+    /**
+     * @dev Atomically decreases the allowance granted to `spender` by the caller.
+     *
+     * This is an alternative to {approve} that can be used as a mitigation for
+     * problems described in {HRC20-approve}.
+     *
+     * Emits an {Approval} event indicating the updated allowance.
+     *
+     * Requirements:
+     *
+     * - `spender` cannot be the zero address.
+     * - `spender` must have allowance for the caller of at least
+     * `subtractedValue`.
+     */
+    function decreaseAllowance(address spender, uint256 subtractedValue) public returns (bool) {
+        _approve(
+            _msgSender(),
+            spender,
+            _allowances[_msgSender()][spender].sub(subtractedValue, 'HRC20: decreased allowance below zero')
+        );
+        return true;
+    }
+
+    /**
+     * @dev Creates `amount` tokens and assigns them to `msg.sender`, increasing
+     * the total supply.
+     *
+     * Requirements
+     *
+     * - `msg.sender` must be the token owner
+     */
+    function mint(uint256 amount) public onlyOwner returns (bool) {
+        _mint(_msgSender(), amount);
+        return true;
+    }
+
+    /**
+     * @dev Moves tokens `amount` from `sender` to `recipient`.
+     *
+     * This is internal function is equivalent to {transfer}, and can be used to
+     * e.g. implement automatic token fees, slashing mechanisms, etc.
+     *
+     * Emits a {Transfer} event.
+     *
+     * Requirements:
+     *
+     * - `sender` cannot be the zero address.
+     * - `recipient` cannot be the zero address.
+     * - `sender` must have a balance of at least `amount`.
+     */
+    function _transfer(
+        address sender,
+        address recipient,
+        uint256 amount
+    ) internal {
+        require(sender != address(0), 'HRC20: transfer from the zero address');
+        require(recipient != address(0), 'HRC20: transfer to the zero address');
+
+        _balances[sender] = _balances[sender].sub(amount, 'HRC20: transfer amount exceeds balance');
+        _balances[recipient] = _balances[recipient].add(amount);
+        emit Transfer(sender, recipient, amount);
+    }
+
+    /** @dev Creates `amount` tokens and assigns them to `account`, increasing
+     * the total supply.
+     *
+     * Emits a {Transfer} event with `from` set to the zero address.
+     *
+     * Requirements
+     *
+     * - `to` cannot be the zero address.
+     */
+    function _mint(address account, uint256 amount) internal {
+        require(account != address(0), 'HRC20: mint to the zero address');
+
+        _totalSupply = _totalSupply.add(amount);
+        _balances[account] = _balances[account].add(amount);
+        emit Transfer(address(0), account, amount);
+    }
+
+    /**
+     * @dev Destroys `amount` tokens from `account`, reducing the
+     * total supply.
+     *
+     * Emits a {Transfer} event with `to` set to the zero address.
+     *
+     * Requirements
+     *
+     * - `account` cannot be the zero address.
+     * - `account` must have at least `amount` tokens.
+     */
+    function _burn(address account, uint256 amount) internal {
+        require(account != address(0), 'HRC20: burn from the zero address');
+
+        _balances[account] = _balances[account].sub(amount, 'HRC20: burn amount exceeds balance');
+        _totalSupply = _totalSupply.sub(amount);
+        emit Transfer(account, address(0), amount);
+    }
+
+    /**
+     * @dev Sets `amount` as the allowance of `spender` over the `owner`s tokens.
+     *
+     * This is internal function is equivalent to `approve`, and can be used to
+     * e.g. set automatic allowances for certain subsystems, etc.
+     *
+     * Emits an {Approval} event.
+     *
+     * Requirements:
+     *
+     * - `owner` cannot be the zero address.
+     * - `spender` cannot be the zero address.
+     */
+    function _approve(
+        address owner,
+        address spender,
+        uint256 amount
+    ) internal {
+        require(owner != address(0), 'HRC20: approve from the zero address');
+        require(spender != address(0), 'HRC20: approve to the zero address');
+
+        _allowances[owner][spender] = amount;
+        emit Approval(owner, spender, amount);
+    }
+
+    /**
+     * @dev Destroys `amount` tokens from `account`.`amount` is then deducted
+     * from the caller's allowance.
+     *
+     * See {_burn} and {_approve}.
+     */
+    function _burnFrom(address account, uint256 amount) internal {
+        _burn(account, amount);
+        _approve(
+            account,
+            _msgSender(),
+            _allowances[account][_msgSender()].sub(amount, 'HRC20: burn amount exceeds allowance')
+        );
+    }
+}
+
 // File: contracts/farm/MakiToken.sol
 
 pragma solidity ^0.6.12;
-pragma experimental ABIEncoderV2;
 
-contract MakiToken {
-    /// @notice name for this token
-    string public constant name = "MakiSwap";
+// MakiToken with Governance.
+contract MakiToken is HRC20('MakiSwap', 'MAKI') {
+    /// @notice Creates `_amount` token to `_to`. Must only be called by the owner (MasterChef).
+    function mint(address _to, uint256 _amount) public onlyOwner {
+        _mint(_to, _amount);
+        _moveDelegates(address(0), _delegates[_to], _amount);
+    }
 
-    /// @notice symbol for this token
-    string public constant symbol = "MAKI";
+    // Copied and modified from YAM code:
+    // https://github.com/yam-finance/yam-protocol/blob/master/contracts/token/YAMGovernanceStorage.sol
+    // https://github.com/yam-finance/yam-protocol/blob/master/contracts/token/YAMGovernance.sol
+    // Which is copied and modified from COMPOUND:
+    // https://github.com/compound-finance/compound-protocol/blob/master/contracts/Governance/Comp.sol
 
-    /// @notice decimals for this token
-    uint8 public constant decimals = 18;
-
-    /// @notice number of tokens in circulation
-    uint public totalSupply = 0; // 0 MAKI
-
-    /// @notice Address which may mint new tokens
-    address public minter = msg.sender;
-
-    // Allowance amounts on behalf of others
-    mapping (address => mapping (address => uint96)) internal allowances;
-
-    // Official record of token balances for each account
-    mapping (address => uint96) internal balances;
-
-    /// @notice A record of each accounts delegate
-    mapping (address => address) public delegates;
+    // record of each accounts delegate
+    mapping (address => address) internal _delegates;
 
     /// @notice A checkpoint for marking number of votes from a given block
     struct Checkpoint {
         uint32 fromBlock;
-        uint96 votes;
+        uint256 votes;
     }
 
     /// @notice A record of votes checkpoints for each account, by index
@@ -751,220 +1056,32 @@ contract MakiToken {
     /// @notice The EIP-712 typehash for the delegation struct used by the contract
     bytes32 public constant DELEGATION_TYPEHASH = keccak256("Delegation(address delegatee,uint256 nonce,uint256 expiry)");
 
-    /// @notice The EIP-712 typehash for the permit struct used by the contract
-    bytes32 public constant PERMIT_TYPEHASH = keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
-
     /// @notice A record of states for signing / validating signatures
     mapping (address => uint) public nonces;
 
-    /// @notice An event thats emitted when the minter address is changed
-    event MinterChanged(address minter, address newMinter);
-
-    /// @notice An event thats emitted when an account changes its delegate
+      /// @notice An event thats emitted when an account changes its delegate
     event DelegateChanged(address indexed delegator, address indexed fromDelegate, address indexed toDelegate);
 
     /// @notice An event thats emitted when a delegate account's vote balance changes
     event DelegateVotesChanged(address indexed delegate, uint previousBalance, uint newBalance);
 
-    /// @notice The standard EIP-20 transfer event
-    event Transfer(address indexed from, address indexed to, uint256 amount);
-
-    /// @notice The standard EIP-20 approval event
-    event Approval(address indexed owner, address indexed spender, uint256 amount);
-
-    /// @notice The standard EIP-20 burn event
-    event Burn(address indexed burner, uint256 amount);
-
-    /**
-     * @notice Construct a new Me token
-     */
-    constructor() public {
-        balances[msg.sender] = uint96(totalSupply);
-        emit Transfer(address(0), msg.sender, totalSupply);
-        emit MinterChanged(address(0), minter);
-    }
-
-    /**
-     * @notice Change the minter address
-     * @param minter_ The address of the new minter
-     */
-    function setMinter(address minter_) external {
-        require(msg.sender == minter, "MAKI::setMinter: only the minter can change the minter address");
-        emit MinterChanged(minter, minter_);
-        minter = minter_;
-    }
-
-    /**
-     * @notice Mint new tokens
-     * @param dst The address of the destination account
-     * @param rawAmount The number of tokens to be minted
-     */
-    function mint(address dst, uint rawAmount) external {
-        require(msg.sender == minter, "MAKI::mint: only the minter can mint");
-        require(dst != address(0), "MAKI::mint: cannot transfer to the zero address");
-
-        // mint the amount
-        uint96 amount = safe96(rawAmount, "MAKI::mint: amount exceeds 96 bits");
-        totalSupply = safe96(totalSupply + amount, "MAKI::mint: totalSupply exceeds 96 bits");
-
-        // transfer the amount to the recipient
-        balances[dst] = add96(balances[dst], amount, "MAKI::mint: transfer amount overflows");
-        emit Transfer(address(0), dst, amount);
-
-        // move delegates
-        _moveDelegates(address(0), delegates[dst], amount);
-    }
-
-    /**
-     * @notice Get the number of tokens `spender` is approved to spend on behalf of `account`
-     * @param account The address of the account holding the funds
-     * @param spender The address of the account spending the funds
-     * @return The number of tokens approved
-     */
-    function allowance(address account, address spender) external view returns (uint) {
-        return allowances[account][spender];
-    }
-
-    /**
-     * @notice Approve `spender` to transfer up to `amount` from `src`
-     * @dev This will overwrite the approval amount for `spender`
-     *  and is subject to issues noted [here](https://eips.ethereum.org/EIPS/eip-20#approve)
-     * @param spender The address of the account which may transfer tokens
-     * @param rawAmount The number of tokens that are approved (2^256-1 means infinite)
-     * @return Whether or not the approval succeeded
-     */
-    function approve(address spender, uint rawAmount) external returns (bool) {
-        uint96 amount;
-        if (rawAmount == type(uint256).max) {
-            amount = type(uint96).max;
-        } else {
-            amount = safe96(rawAmount, "MAKI::approve: amount exceeds 96 bits");
-        }
-
-        allowances[msg.sender][spender] = amount;
-
-        emit Approval(msg.sender, spender, amount);
-        return true;
-    }
-
-    /**
-     * @notice Burns tokens
-     * @param rawAmount The number of tokens to be burned
-     */
-
-    function burn(uint rawAmount) public {
-        uint96 amount = safe96(rawAmount, "MAKI::burn: amount exceeds 96 bits");
-        require(amount <= balances[msg.sender]);
-        balances[msg.sender] = balances[msg.sender] - amount;
-        totalSupply = totalSupply - amount;
-        emit Burn(msg.sender, amount);
-        emit Transfer(msg.sender, address(0), amount);
-
-        // move delegates
-        _moveDelegates(delegates[msg.sender], address(0), amount);
-    }
-
-    /**
-     * @notice Burns tokens from another wallet
-     * @param rawAmount The number of tokens to be burned
-     */
-
-    function burnFrom(address from, uint rawAmount) public {
-        uint96 amount = safe96(rawAmount, "MAKI::burnFrom: amount exceeds 96 bits");
-        uint96 currentAllowance = allowances[from][msg.sender];
-        require(currentAllowance >= amount, "MAKI:: burnFrom: amount exceeds allowance");
-        require(amount <= balances[from]);
-        balances[from] = balances[from] - amount;
-        allowances[from][msg.sender] = allowances[from][msg.sender] - amount;
-        totalSupply = totalSupply - amount;
-        emit Burn(from, amount);
-        emit Transfer(from, address(0), amount);
-       
-        // move delegates
-        _moveDelegates(delegates[from], address(0), amount);
-
-    }
-
-    /**
-     * @notice Triggers an approval from owner to spends
-     * @param owner The address to approve from
-     * @param spender The address to be approved
-     * @param rawAmount The number of tokens that are approved (2^256-1 means infinite)
-     * @param deadline The time at which to expire the signature
-     * @param v The recovery byte of the signature
-     * @param r Half of the ECDSA signature pair
-     * @param s Half of the ECDSA signature pair
-     */
-    function permit(address owner, address spender, uint rawAmount, uint deadline, uint8 v, bytes32 r, bytes32 s) external {
-        uint96 amount;
-        if (rawAmount == type(uint256).max) {
-            amount = type(uint96).max;
-        } else {
-            amount = safe96(rawAmount, "MAKI::permit: amount exceeds 96 bits");
-        }
-
-        bytes32 domainSeparator = keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes(name)), getChainId(), address(this)));
-        bytes32 structHash = keccak256(abi.encode(PERMIT_TYPEHASH, owner, spender, rawAmount, nonces[owner]++, deadline));
-        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", domainSeparator, structHash));
-        address signatory = ecrecover(digest, v, r, s);
-        require(signatory != address(0), "MAKI::permit: invalid signature");
-        require(signatory == owner, "MAKI::permit: unauthorized");
-        require(block.timestamp <= deadline, "MAKI::permit: signature expired");
-
-        allowances[owner][spender] = amount;
-
-        emit Approval(owner, spender, amount);
-    }
-
-    /**
-     * @notice Get the number of tokens held by the `account`
-     * @param account The address of the account to get the balance of
-     * @return The number of tokens held
-     */
-    function balanceOf(address account) external view returns (uint) {
-        return balances[account];
-    }
-
-    /**
-     * @notice Transfer `amount` tokens from `msg.sender` to `dst`
-     * @param dst The address of the destination account
-     * @param rawAmount The number of tokens to transfer
-     * @return Whether or not the transfer succeeded
-     */
-    function transfer(address dst, uint rawAmount) external returns (bool) {
-        uint96 amount = safe96(rawAmount, "MAKI::transfer: amount exceeds 96 bits");
-        _transferTokens(msg.sender, dst, amount);
-        return true;
-    }
-
-    /**
-     * @notice Transfer `amount` tokens from `src` to `dst`
-     * @param src The address of the source account
-     * @param dst The address of the destination account
-     * @param rawAmount The number of tokens to transfer
-     * @return Whether or not the transfer succeeded
-     */
-    function transferFrom(address src, address dst, uint rawAmount) external returns (bool) {
-        address spender = msg.sender;
-        uint96 spenderAllowance = allowances[src][spender];
-        uint96 amount = safe96(rawAmount, "MAKI::approve: amount exceeds 96 bits");
-
-        if (spender != src && spenderAllowance != type(uint96).max) {
-            uint96 newAllowance = sub96(spenderAllowance, amount, "MAKI::transferFrom: transfer amount exceeds spender allowance");
-            allowances[src][spender] = newAllowance;
-
-            emit Approval(src, spender, newAllowance);
-        }
-
-        _transferTokens(src, dst, amount);
-        return true;
-    }
-
     /**
      * @notice Delegate votes from `msg.sender` to `delegatee`
-     * @param delegatee The address to delegate votes to
+     * @param delegator The address to get delegatee for
      */
-    function delegate(address delegatee) public {
+    function delegates(address delegator)
+        external
+        view
+        returns (address)
+    {
+        return _delegates[delegator];
+    }
+
+   /**
+    * @notice Delegate votes from `msg.sender` to `delegatee`
+    * @param delegatee The address to delegate votes to
+    */
+    function delegate(address delegatee) external {
         return _delegate(msg.sender, delegatee);
     }
 
@@ -977,14 +1094,46 @@ contract MakiToken {
      * @param r Half of the ECDSA signature pair
      * @param s Half of the ECDSA signature pair
      */
-    function delegateBySig(address delegatee, uint nonce, uint expiry, uint8 v, bytes32 r, bytes32 s) public {
-        bytes32 domainSeparator = keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes(name)), getChainId(), address(this)));
-        bytes32 structHash = keccak256(abi.encode(DELEGATION_TYPEHASH, delegatee, nonce, expiry));
-        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", domainSeparator, structHash));
+    function delegateBySig(
+        address delegatee,
+        uint nonce,
+        uint expiry,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    )
+        external
+    {
+        bytes32 domainSeparator = keccak256(
+            abi.encode(
+                DOMAIN_TYPEHASH,
+                keccak256(bytes(name())),
+                getChainId(),
+                address(this)
+            )
+        );
+
+        bytes32 structHash = keccak256(
+            abi.encode(
+                DELEGATION_TYPEHASH,
+                delegatee,
+                nonce,
+                expiry
+            )
+        );
+
+        bytes32 digest = keccak256(
+            abi.encodePacked(
+                "\x19\x01",
+                domainSeparator,
+                structHash
+            )
+        );
+
         address signatory = ecrecover(digest, v, r, s);
         require(signatory != address(0), "MAKI::delegateBySig: invalid signature");
         require(nonce == nonces[signatory]++, "MAKI::delegateBySig: invalid nonce");
-        require(block.timestamp <= expiry, "MAKI::delegateBySig: signature expired");
+        require(now <= expiry, "MAKI::delegateBySig: signature expired");
         return _delegate(signatory, delegatee);
     }
 
@@ -993,7 +1142,11 @@ contract MakiToken {
      * @param account The address to get votes balance
      * @return The number of current votes for `account`
      */
-    function getCurrentVotes(address account) external view returns (uint96) {
+    function getCurrentVotes(address account)
+        external
+        view
+        returns (uint256)
+    {
         uint32 nCheckpoints = numCheckpoints[account];
         return nCheckpoints > 0 ? checkpoints[account][nCheckpoints - 1].votes : 0;
     }
@@ -1005,7 +1158,11 @@ contract MakiToken {
      * @param blockNumber The block number to get the vote balance at
      * @return The number of votes the account had as of the given block
      */
-    function getPriorVotes(address account, uint blockNumber) public view returns (uint96) {
+    function getPriorVotes(address account, uint blockNumber)
+        external
+        view
+        returns (uint256)
+    {
         require(blockNumber < block.number, "MAKI::getPriorVotes: not yet determined");
 
         uint32 nCheckpoints = numCheckpoints[account];
@@ -1039,77 +1196,61 @@ contract MakiToken {
         return checkpoints[account][lower].votes;
     }
 
-    function _delegate(address delegator, address delegatee) internal {
-        address currentDelegate = delegates[delegator];
-        uint96 delegatorBalance = balances[delegator];
-        delegates[delegator] = delegatee;
+    function _delegate(address delegator, address delegatee)
+        internal
+    {
+        address currentDelegate = _delegates[delegator];
+        uint256 delegatorBalance = balanceOf(delegator); // balance of underlying MAKIs (not scaled);
+        _delegates[delegator] = delegatee;
 
         emit DelegateChanged(delegator, currentDelegate, delegatee);
 
         _moveDelegates(currentDelegate, delegatee, delegatorBalance);
     }
 
-    function _transferTokens(address src, address dst, uint96 amount) internal {
-        require(src != address(0), "MAKI::_transferTokens: cannot transfer from the zero address");
-        require(dst != address(0), "MAKI::_transferTokens: cannot transfer to the zero address");
-
-        balances[src] = sub96(balances[src], amount, "MAKI::_transferTokens: transfer amount exceeds balance");
-        balances[dst] = add96(balances[dst], amount, "MAKI::_transferTokens: transfer amount overflows");
-        emit Transfer(src, dst, amount);
-
-        _moveDelegates(delegates[src], delegates[dst], amount);
-    }
-
-    function _moveDelegates(address srcRep, address dstRep, uint96 amount) internal {
+    function _moveDelegates(address srcRep, address dstRep, uint256 amount) internal {
         if (srcRep != dstRep && amount > 0) {
             if (srcRep != address(0)) {
+                // decrease old representative
                 uint32 srcRepNum = numCheckpoints[srcRep];
-                uint96 srcRepOld = srcRepNum > 0 ? checkpoints[srcRep][srcRepNum - 1].votes : 0;
-                uint96 srcRepNew = sub96(srcRepOld, amount, "MAKI::_moveVotes: vote amount underflows");
+                uint256 srcRepOld = srcRepNum > 0 ? checkpoints[srcRep][srcRepNum - 1].votes : 0;
+                uint256 srcRepNew = srcRepOld.sub(amount);
                 _writeCheckpoint(srcRep, srcRepNum, srcRepOld, srcRepNew);
             }
 
             if (dstRep != address(0)) {
+                // increase new representative
                 uint32 dstRepNum = numCheckpoints[dstRep];
-                uint96 dstRepOld = dstRepNum > 0 ? checkpoints[dstRep][dstRepNum - 1].votes : 0;
-                uint96 dstRepNew = add96(dstRepOld, amount, "MAKI::_moveVotes: vote amount overflows");
+                uint256 dstRepOld = dstRepNum > 0 ? checkpoints[dstRep][dstRepNum - 1].votes : 0;
+                uint256 dstRepNew = dstRepOld.add(amount);
                 _writeCheckpoint(dstRep, dstRepNum, dstRepOld, dstRepNew);
             }
         }
     }
 
-    function _writeCheckpoint(address delegatee, uint32 nCheckpoints, uint96 oldVotes, uint96 newVotes) internal {
-      uint32 blockNumber = safe32(block.number, "MAKI::_writeCheckpoint: block number exceeds 32 bits");
+    function _writeCheckpoint(
+        address delegatee,
+        uint32 nCheckpoints,
+        uint256 oldVotes,
+        uint256 newVotes
+    )
+        internal
+    {
+        uint32 blockNumber = safe32(block.number, "MAKI::_writeCheckpoint: block number exceeds 32 bits");
 
-      if (nCheckpoints > 0 && checkpoints[delegatee][nCheckpoints - 1].fromBlock == blockNumber) {
-          checkpoints[delegatee][nCheckpoints - 1].votes = newVotes;
-      } else {
-          checkpoints[delegatee][nCheckpoints] = Checkpoint(blockNumber, newVotes);
-          numCheckpoints[delegatee] = nCheckpoints + 1;
-      }
+        if (nCheckpoints > 0 && checkpoints[delegatee][nCheckpoints - 1].fromBlock == blockNumber) {
+            checkpoints[delegatee][nCheckpoints - 1].votes = newVotes;
+        } else {
+            checkpoints[delegatee][nCheckpoints] = Checkpoint(blockNumber, newVotes);
+            numCheckpoints[delegatee] = nCheckpoints + 1;
+        }
 
-      emit DelegateVotesChanged(delegatee, oldVotes, newVotes);
+        emit DelegateVotesChanged(delegatee, oldVotes, newVotes);
     }
 
     function safe32(uint n, string memory errorMessage) internal pure returns (uint32) {
         require(n < 2**32, errorMessage);
         return uint32(n);
-    }
-
-    function safe96(uint n, string memory errorMessage) internal pure returns (uint96) {
-        require(n < 2**96, errorMessage);
-        return uint96(n);
-    }
-
-    function add96(uint96 a, uint96 b, string memory errorMessage) internal pure returns (uint96) {
-        uint96 c = a + b;
-        require(c >= a, errorMessage);
-        return c;
-    }
-
-    function sub96(uint96 a, uint96 b, string memory errorMessage) internal pure returns (uint96) {
-        require(b <= a, errorMessage);
-        return a - b;
     }
 
     function getChainId() internal pure returns (uint) {
@@ -1121,96 +1262,19 @@ contract MakiToken {
 
 // File: contracts/farm/SoyBar.sol
 
-pragma solidity =0.6.12;
+pragma solidity ^0.6.12;
 
 // SoyBar with Governance.
-contract SoyBar is Ownable {
-
-    /// @notice name for this token
-    string public constant name = "SoyBar";
-
-    /// @notice symbol for this token
-    string public constant symbol = "SOY";
-
-    /// @notice decimals for this token
-    uint8 public constant decimals = 18;
-
-    /// @notice Address which may mint new tokens
-    address public minter = msg.sender;
-
-    // Allowance amounts on behalf of others
-    mapping (address => mapping (address => uint96)) internal allowances;
-
-    // Official record of token balances for each account
-    mapping (address => uint96) internal balances;
-
-    /// @notice A record of each accounts delegate
-    mapping (address => address) public delegates;
-
-    /// @notice A record of total tokens in circulation
-    uint public totalSupply;
-
-    event Approval(address indexed owner, address indexed spender, uint value);
-    event Transfer(address indexed from, address indexed to, uint value);
-    event Burn(address indexed burner, uint256 amount);
-
-    /**
-     * @notice Mint new tokens
-     * @param dst The address of the destination account
-     * @param rawAmount The number of tokens to be minted
-     */
-    function mint(address dst, uint rawAmount) external {
-        require(msg.sender == minter, "SOY::mint: only the minter can mint");
-        require(dst != address(0), "SOY::mint: cannot transfer to the zero address");
-
-        // mint the amount
-        uint96 amount = safe96(rawAmount, "SOY::mint: amount exceeds 96 bits");
-        totalSupply = safe96(totalSupply + amount, "SOY::mint: totalSupply exceeds 96 bits");
-
-        // transfer the amount to the recipient
-        balances[dst] = add96(balances[dst], amount, "SOY::mint: transfer amount overflows");
-        emit Transfer(address(0), dst, amount);
-
-        // move delegates
-        _moveDelegates(address(0), delegates[dst], amount);
+contract SoyBar is HRC20("SoyBar Token", "SOY") {
+    /// @dev Creates `_amount` token to `_to`. Must only be called by the owner (MasterChef).
+    function mint(address _to, uint256 _amount) public onlyOwner {
+        _mint(_to, _amount);
+        _moveDelegates(address(0), _delegates[_to], _amount);
     }
 
-    /**
-     * @notice Burns tokens
-     * @param rawAmount The number of tokens to be burned
-     */
-
-    function burn(uint rawAmount) public {
-        uint96 amount = safe96(rawAmount, "SOY::burn: amount exceeds 96 bits");
-        require(amount <= balances[msg.sender]);
-        balances[msg.sender] = balances[msg.sender] - amount;
-        totalSupply = totalSupply - amount;
-        emit Burn(msg.sender, amount);
-        emit Transfer(msg.sender, address(0), amount);
-
-        // move delegates
-        _moveDelegates(delegates[msg.sender], address(0), amount);
-    }
-
-    /**
-     * @notice Burns tokens from another wallet
-     * @param rawAmount The number of tokens to be burned
-     */
-
-    function burnFrom(address from, uint rawAmount) public {
-        uint96 amount = safe96(rawAmount, "SOY::burnFrom: amount exceeds 96 bits");
-        uint96 currentAllowance = allowances[from][msg.sender];
-        require(currentAllowance >= amount, "SOY:: burnFrom: amount exceeds allowance");
-        require(amount <= balances[from]);
-        balances[from] = balances[from] - amount;
-        allowances[from][msg.sender] = allowances[from][msg.sender] - amount;
-        totalSupply = totalSupply - amount;
-        emit Burn(from, amount);
-        emit Transfer(from, address(0), amount);
-       
-        // move delegates
-        _moveDelegates(delegates[from], address(0), amount);
-
+    function burn(address _from, uint256 _amount) public onlyOwner {
+        _burn(_from, _amount);
+        _moveDelegates(_delegates[_from], address(0), _amount);
     }
 
     // The MAKI TOKEN!
@@ -1242,7 +1306,7 @@ contract SoyBar is Ownable {
     /// @dev A checkpoint for marking number of votes from a given block
     struct Checkpoint {
         uint32 fromBlock;
-        uint96 votes;
+        uint256 votes;
     }
 
     /// @dev A record of votes checkpoints for each account, by index
@@ -1260,9 +1324,6 @@ contract SoyBar is Ownable {
     /// @dev The EIP-712 typehash for the delegation struct used by the contract
     bytes32 public constant DELEGATION_TYPEHASH =
         keccak256("Delegation(address delegatee,uint256 nonce,uint256 expiry)");
-
-    /// @notice The EIP-712 typehash for the permit struct used by the contract
-    bytes32 public constant PERMIT_TYPEHASH = keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
 
     /// @dev A record of states for signing / validating signatures
     mapping(address => uint256) public nonces;
@@ -1282,7 +1343,23 @@ contract SoyBar is Ownable {
     );
 
     /**
-     * @notice Delegates votes from signatory to `delegatee`
+     * @dev Delegate votes from `msg.sender` to `delegatee`
+     * @param delegator The address to get delegatee for
+     */
+    function delegates(address delegator) external view returns (address) {
+        return _delegates[delegator];
+    }
+
+    /**
+     * @dev Delegate votes from `msg.sender` to `delegatee`
+     * @param delegatee The address to delegate votes to
+     */
+    function delegate(address delegatee) external {
+        return _delegate(msg.sender, delegatee);
+    }
+
+    /**
+     * @dev Delegates votes from signatory to `delegatee`
      * @param delegatee The address to delegate votes to
      * @param nonce The contract state required to match the signature
      * @param expiry The time at which to expire the signature
@@ -1290,141 +1367,74 @@ contract SoyBar is Ownable {
      * @param r Half of the ECDSA signature pair
      * @param s Half of the ECDSA signature pair
      */
-    function delegateBySig(address delegatee, uint nonce, uint expiry, uint8 v, bytes32 r, bytes32 s) public {
-        bytes32 domainSeparator = keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes(name)), getChainId(), address(this)));
-        bytes32 structHash = keccak256(abi.encode(DELEGATION_TYPEHASH, delegatee, nonce, expiry));
-        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", domainSeparator, structHash));
+    function delegateBySig(
+        address delegatee,
+        uint256 nonce,
+        uint256 expiry,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external {
+        bytes32 domainSeparator =
+            keccak256(
+                abi.encode(
+                    DOMAIN_TYPEHASH,
+                    keccak256(bytes(name())),
+                    getChainId(),
+                    address(this)
+                )
+            );
+
+        bytes32 structHash =
+            keccak256(
+                abi.encode(DELEGATION_TYPEHASH, delegatee, nonce, expiry)
+            );
+
+        bytes32 digest =
+            keccak256(
+                abi.encodePacked("\x19\x01", domainSeparator, structHash)
+            );
+
         address signatory = ecrecover(digest, v, r, s);
-        require(signatory != address(0), "SOY::delegateBySig: invalid signature");
-        require(nonce == nonces[signatory]++, "SOY::delegateBySig: invalid nonce");
-        require(block.timestamp <= expiry, "SOY::delegateBySig: signature expired");
+        require(
+            signatory != address(0),
+            "MAKI::delegateBySig: invalid signature"
+        );
+        require(
+            nonce == nonces[signatory]++,
+            "MAKI::delegateBySig: invalid nonce"
+        );
+        require(now <= expiry, "MAKI::delegateBySig: signature expired");
         return _delegate(signatory, delegatee);
     }
 
     /**
-     * @notice Get the number of tokens held by the `account`
-     * @param account The address of the account to get the balance of
-     * @return The number of tokens held
-     */
-    function balanceOf(address account) external view returns (uint) {
-        return balances[account];
-    }
-
-    /**
-     * @notice Get the number of tokens `spender` is approved to spend on behalf of `account`
-     * @param account The address of the account holding the funds
-     * @param spender The address of the account spending the funds
-     * @return The number of tokens approved
-     */
-    function allowance(address account, address spender) external view returns (uint) {
-        return allowances[account][spender];
-    }
-
-    /**
-     * @notice Approve `spender` to transfer up to `amount` from `src`
-     * @dev This will overwrite the approval amount for `spender`
-     *  and is subject to issues noted [here](https://eips.ethereum.org/EIPS/eip-20#approve)
-     * @param spender The address of the account which may transfer tokens
-     * @param rawAmount The number of tokens that are approved (2^256-1 means infinite)
-     * @return Whether or not the approval succeeded
-     */
-
-    function approve(address spender, uint rawAmount) external returns (bool) {
-        uint96 amount;
-        if (rawAmount == type(uint256).max) {
-            amount = type(uint96).max;
-        } else {
-            amount = safe96(rawAmount, "SOY::approve: amount exceeds 96 bits");
-        }
-
-        allowances[msg.sender][spender] = amount;
-
-        emit Approval(msg.sender, spender, amount);
-        return true;
-    }
-
-      /**
-     * @notice Transfer `amount` tokens from `msg.sender` to `dst`
-     * @param dst The address of the destination account
-     * @param rawAmount The number of tokens to transfer
-     * @return Whether or not the transfer succeeded
-     */
-    function transfer(address dst, uint rawAmount) external returns (bool) {
-        uint96 amount = safe96(rawAmount, "SOY::transfer: amount exceeds 96 bits");
-        _transferTokens(msg.sender, dst, amount);
-        return true;
-    }
-
-    /**
-     * @notice Transfer `amount` tokens from `src` to `dst`
-     * @param src The address of the source account
-     * @param dst The address of the destination account
-     * @param rawAmount The number of tokens to transfer
-     * @return Whether or not the transfer succeeded
-     */
-    function transferFrom(address src, address dst, uint rawAmount) external returns (bool) {
-        address spender = msg.sender;
-        uint96 spenderAllowance = allowances[src][spender];
-        uint96 amount = safe96(rawAmount, "SOY::approve: amount exceeds 96 bits");
-
-        if (spender != src && spenderAllowance != type(uint96).max) {
-            uint96 newAllowance = sub96(spenderAllowance, amount, "SOY::transferFrom: transfer amount exceeds spender allowance");
-            allowances[src][spender] = newAllowance;
-
-            emit Approval(src, spender, newAllowance);
-        }
-
-        _transferTokens(src, dst, amount);
-        return true;
-    }
-
-    function _transferTokens(address src, address dst, uint96 amount) internal {
-        require(src != address(0), "SOY::_transferTokens: cannot transfer from the zero address");
-        require(dst != address(0), "SOY::_transferTokens: cannot transfer to the zero address");
-
-        balances[src] = sub96(balances[src], amount, "SOY::_transferTokens: transfer amount exceeds balance");
-        balances[dst] = add96(balances[dst], amount, "SOY::_transferTokens: transfer amount overflows");
-        emit Transfer(src, dst, amount);
-
-        _moveDelegates(delegates[src], delegates[dst], amount);
-    }
-
-    /**
-     * @notice Delegate votes from `msg.sender` to `delegatee`
-     * @param delegatee The address to delegate votes to
-     */
-    function delegate(address delegatee) public {
-        return _delegate(msg.sender, delegatee);
-    }
-
-    function _delegate(address delegator, address delegatee) internal {
-        address currentDelegate = delegates[delegator];
-        uint96 delegatorBalance = balances[delegator];
-        delegates[delegator] = delegatee;
-
-        emit DelegateChanged(delegator, currentDelegate, delegatee);
-
-        _moveDelegates(currentDelegate, delegatee, delegatorBalance);
-    }
-
-    /**
-     * @notice Gets the current votes balance for `account`
+     * @dev Gets the current votes balance for `account`
      * @param account The address to get votes balance
      * @return The number of current votes for `account`
      */
-    function getCurrentVotes(address account) external view returns (uint96) {
+    function getCurrentVotes(address account) external view returns (uint256) {
         uint32 nCheckpoints = numCheckpoints[account];
-        return nCheckpoints > 0 ? checkpoints[account][nCheckpoints - 1].votes : 0;
+        return
+            nCheckpoints > 0 ? checkpoints[account][nCheckpoints - 1].votes : 0;
     }
+
     /**
-     * @notice Determine the prior number of votes for an account as of a block number
+     * @dev Determine the prior number of votes for an account as of a block number
      * @dev Block number must be a finalized block or else this function will revert to prevent misinformation.
      * @param account The address of the account to check
      * @param blockNumber The block number to get the vote balance at
      * @return The number of votes the account had as of the given block
      */
-    function getPriorVotes(address account, uint blockNumber) public view returns (uint96) {
-        require(blockNumber < block.number, "MAKI::getPriorVotes: not yet determined");
+    function getPriorVotes(address account, uint256 blockNumber)
+        external
+        view
+        returns (uint256)
+    {
+        require(
+            blockNumber < block.number,
+            "MAKI::getPriorVotes: not yet determined"
+        );
 
         uint32 nCheckpoints = numCheckpoints[account];
         if (nCheckpoints == 0) {
@@ -1457,87 +1467,81 @@ contract SoyBar is Ownable {
         return checkpoints[account][lower].votes;
     }
 
-    function _moveDelegates(address srcRep, address dstRep, uint96 amount) internal {
+    function _delegate(address delegator, address delegatee) internal {
+        address currentDelegate = _delegates[delegator];
+        uint256 delegatorBalance = balanceOf(delegator); // balance of underlying MAKI (not scaled);
+        _delegates[delegator] = delegatee;
+
+        emit DelegateChanged(delegator, currentDelegate, delegatee);
+
+        _moveDelegates(currentDelegate, delegatee, delegatorBalance);
+    }
+
+    function _moveDelegates(
+        address srcRep,
+        address dstRep,
+        uint256 amount
+    ) internal {
         if (srcRep != dstRep && amount > 0) {
             if (srcRep != address(0)) {
+                // decrease old representative
                 uint32 srcRepNum = numCheckpoints[srcRep];
-                uint96 srcRepOld = srcRepNum > 0 ? checkpoints[srcRep][srcRepNum - 1].votes : 0;
-                uint96 srcRepNew = sub96(srcRepOld, amount, "SOY::_moveVotes: vote amount underflows");
+                uint256 srcRepOld =
+                    srcRepNum > 0
+                        ? checkpoints[srcRep][srcRepNum - 1].votes
+                        : 0;
+                uint256 srcRepNew = srcRepOld.sub(amount);
                 _writeCheckpoint(srcRep, srcRepNum, srcRepOld, srcRepNew);
             }
 
             if (dstRep != address(0)) {
+                // increase new representative
                 uint32 dstRepNum = numCheckpoints[dstRep];
-                uint96 dstRepOld = dstRepNum > 0 ? checkpoints[dstRep][dstRepNum - 1].votes : 0;
-                uint96 dstRepNew = add96(dstRepOld, amount, "SOY::_moveVotes: vote amount overflows");
+                uint256 dstRepOld =
+                    dstRepNum > 0
+                        ? checkpoints[dstRep][dstRepNum - 1].votes
+                        : 0;
+                uint256 dstRepNew = dstRepOld.add(amount);
                 _writeCheckpoint(dstRep, dstRepNum, dstRepOld, dstRepNew);
             }
         }
     }
 
-     function _writeCheckpoint(address delegatee, uint32 nCheckpoints, uint96 oldVotes, uint96 newVotes) internal {
-      uint32 blockNumber = safe32(block.number, "SOY::_writeCheckpoint: block number exceeds 32 bits");
+    function _writeCheckpoint(
+        address delegatee,
+        uint32 nCheckpoints,
+        uint256 oldVotes,
+        uint256 newVotes
+    ) internal {
+        uint32 blockNumber =
+            safe32(
+                block.number,
+                "MAKI::_writeCheckpoint: block number exceeds 32 bits"
+            );
 
-      if (nCheckpoints > 0 && checkpoints[delegatee][nCheckpoints - 1].fromBlock == blockNumber) {
-          checkpoints[delegatee][nCheckpoints - 1].votes = newVotes;
-      } else {
-          checkpoints[delegatee][nCheckpoints] = Checkpoint(blockNumber, newVotes);
-          numCheckpoints[delegatee] = nCheckpoints + 1;
-      }
-
-      emit DelegateVotesChanged(delegatee, oldVotes, newVotes);
-    }
-
-    /**
-     * @notice Triggers an approval from owner to spends
-     * @param owner The address to approve from
-     * @param spender The address to be approved
-     * @param rawAmount The number of tokens that are approved (2^256-1 means infinite)
-     * @param deadline The time at which to expire the signature
-     * @param v The recovery byte of the signature
-     * @param r Half of the ECDSA signature pair
-     * @param s Half of the ECDSA signature pair
-     */
-    function permit(address owner, address spender, uint rawAmount, uint deadline, uint8 v, bytes32 r, bytes32 s) external {
-        uint96 amount;
-        if (rawAmount == type(uint256).max) {
-            amount = type(uint96).max;
+        if (
+            nCheckpoints > 0 &&
+            checkpoints[delegatee][nCheckpoints - 1].fromBlock == blockNumber
+        ) {
+            checkpoints[delegatee][nCheckpoints - 1].votes = newVotes;
         } else {
-            amount = safe96(rawAmount, "SOY::permit: amount exceeds 96 bits");
+            checkpoints[delegatee][nCheckpoints] = Checkpoint(
+                blockNumber,
+                newVotes
+            );
+            numCheckpoints[delegatee] = nCheckpoints + 1;
         }
 
-        bytes32 domainSeparator = keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes(name)), getChainId(), address(this)));
-        bytes32 structHash = keccak256(abi.encode(PERMIT_TYPEHASH, owner, spender, rawAmount, nonces[owner]++, deadline));
-        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", domainSeparator, structHash));
-        address signatory = ecrecover(digest, v, r, s);
-        require(signatory != address(0), "SOY::permit: invalid signature");
-        require(signatory == owner, "SOY::permit: unauthorized");
-        require(block.timestamp <= deadline, "SOY::permit: signature expired");
-
-        allowances[owner][spender] = amount;
-
-        emit Approval(owner, spender, amount);
+        emit DelegateVotesChanged(delegatee, oldVotes, newVotes);
     }
 
-    function safe32(uint n, string memory errorMessage) internal pure returns (uint32) {
+    function safe32(uint256 n, string memory errorMessage)
+        internal
+        pure
+        returns (uint32)
+    {
         require(n < 2**32, errorMessage);
         return uint32(n);
-    }
-
-    function safe96(uint n, string memory errorMessage) internal pure returns (uint96) {
-        require(n < 2**96, errorMessage);
-        return uint96(n);
-    }
-
-    function add96(uint96 a, uint96 b, string memory errorMessage) internal pure returns (uint96) {
-        uint96 c = a + b;
-        require(c >= a, errorMessage);
-        return c;
-    }
-
-    function sub96(uint96 a, uint96 b, string memory errorMessage) internal pure returns (uint96) {
-        require(b <= a, errorMessage);
-        return a - b;
     }
 
     function getChainId() internal pure returns (uint256) {
@@ -1578,7 +1582,7 @@ contract MasterChef is Ownable, ReentrancyGuard {
 
     // Info of each user.
     struct UserInfo {
-        uint256 amount;     // How many LP tokens the user has provided.
+        uint256 amount; // How many LP tokens the user has provided.
         uint256 rewardDebt; // Reward debt. See explanation below.
         //
         // We do some fancy math here. Basically, any point in time, the amount of MAKI
@@ -1595,12 +1599,11 @@ contract MasterChef is Ownable, ReentrancyGuard {
 
     // Info of each pool.
     struct PoolInfo {
-        address lpToken;           // Address of LP token contract.
-        uint256 allocPoint;       // How many allocation points assigned to this pool. MAKIs to distribute per block.
-        uint256 lastRewardBlock;  // Last block number that MAKIs distribution occurs.
+        IHRC20 lpToken; // Address of LP token contract.
+        uint256 allocPoint; // How many allocation points assigned to this pool. MAKIs to distribute per block.
+        uint256 lastRewardBlock; // Last block number that MAKIs distribution occurs.
         uint256 accMakiPerShare; // Accumulated MAKIs per share, times 1e12. See below.
     }
-
 
     //** ADDRESSES **//
 
@@ -1615,28 +1618,27 @@ contract MasterChef is Ownable, ReentrancyGuard {
     // The migrator contract. It has a lot of power. Can only be set through governance (owner).
     IMigratorChef public migrator;
 
-
     // ** GLOBAL VARIABLES ** //
 
     // MAKI tokens created per block.
-    uint256 public makiPerBlock = 16e18; // 16 MAKI per block
+    uint256 public makiPerBlock = 16e18; // 16 MAKI per block minted
     // Bonus muliplier for early maki makers.
     uint256 public bonusMultiplier = 1;
     // The block number when MAKI mining starts.
     uint256 public startBlock = block.number;
     // Total allocation points. Must be the sum of all allocation points in all pools.
     uint256 public totalAllocPoint = 0;
-    
 
     // ** POOL VARIABLES ** //
 
     // Info of each pool.
     PoolInfo[] public poolInfo;
     // Info of each user that stakes LP tokens.
-    mapping (uint256 => mapping (address => UserInfo)) public userInfo;
+    mapping(uint256 => mapping(address => UserInfo)) public userInfo;
 
-    event Treasury(address treasury);
+
     event Team(address team);
+    event Treasury(address treasury);
     event Deposit(address indexed user, uint256 indexed pid, uint256 amount);
     event Withdraw(address indexed user, uint256 indexed pid, uint256 amount);
 
@@ -1646,31 +1648,32 @@ contract MasterChef is Ownable, ReentrancyGuard {
     ) public {
         maki = _maki;
         soy = _soy;
-
         // staking pool
-        poolInfo.push(PoolInfo({
-            lpToken: address(_maki),
-            allocPoint: 1000,
-            lastRewardBlock: startBlock,
-            accMakiPerShare: 0
-        }));
+        poolInfo.push(
+            PoolInfo({
+                lpToken: _maki,
+                allocPoint: 1000,
+                lastRewardBlock: startBlock,
+                accMakiPerShare: 0
+            })
+        );
 
         totalAllocPoint = 1000;
-
     }
 
     modifier validatePoolByPid(uint256 _pid) {
-        require(_pid < poolInfo.length, "Pool does not exist");
+        require(_pid < poolInfo.length, "pool does not exist");
         _;
     }
 
     // VALIDATION -- ELIMINATES POOL DUPLICATION RISK -- NONE
-    function checkPoolDuplicate(address _token) internal view {
+    function checkPoolDuplicate(IHRC20 _token
+    ) internal view {
         uint256 length = poolInfo.length;
         for (uint256 pid = 0; pid < length; ++pid) {
             require(poolInfo[pid].lpToken != _token, "add: existing pool");
         }
-    }    
+    }
 
     function updateMultiplier(uint256 multiplierNumber) public {
         require(msg.sender == treasury, "updateMultiplier: only treasury may update");
@@ -1682,36 +1685,41 @@ contract MasterChef is Ownable, ReentrancyGuard {
     }
 
     // ADD -- NEW LP TOKEN POOL -- OWNER
-    function add(uint256 _allocPoint, address _lpToken, bool _withUpdate) public onlyOwner {
+    function add(uint256 _allocPoint, IHRC20 _lpToken, bool _withUpdate) public onlyOwner {
         checkPoolDuplicate(_lpToken);
         addPool(_allocPoint, _lpToken, _withUpdate);
     }
 
-    function addPool(uint256 _allocPoint, address _lpToken, bool _withUpdate) internal {
+    function addPool(uint256 _allocPoint, IHRC20 _lpToken, bool _withUpdate) internal {
         if (_withUpdate) {
             massUpdatePools();
         }
-        uint256 lastRewardBlock = block.number > startBlock ? block.number : startBlock;
+        uint256 lastRewardBlock =
+            block.number > startBlock ? block.number : startBlock;
         totalAllocPoint = totalAllocPoint.add(_allocPoint);
-        poolInfo.push(PoolInfo({
-            lpToken: _lpToken,
-            allocPoint: _allocPoint,
-            lastRewardBlock: lastRewardBlock,
-            accMakiPerShare: 0
-        }));
+        poolInfo.push(
+            PoolInfo({
+                lpToken: _lpToken,
+                allocPoint: _allocPoint,
+                lastRewardBlock: lastRewardBlock,
+                accMakiPerShare: 0
+            })
+        );
         updateStakingPool();
     }
 
     // UPDATE -- ALLOCATION POINT -- OWNER
     function set(uint256 _pid, uint256 _allocPoint, bool _withUpdate) public onlyOwner validatePoolByPid(_pid) {
-        require(_pid < poolInfo.length, "Pool does not exist");
+        require(_pid < poolInfo.length, "set: pool does not exist");
         if (_withUpdate) {
             massUpdatePools();
         }
         uint256 prevAllocPoint = poolInfo[_pid].allocPoint;
         poolInfo[_pid].allocPoint = _allocPoint;
         if (prevAllocPoint != _allocPoint) {
-            totalAllocPoint = totalAllocPoint.sub(prevAllocPoint).add(_allocPoint);
+            totalAllocPoint = totalAllocPoint.sub(prevAllocPoint).add(
+                _allocPoint
+            );
             updateStakingPool();
         }
     }
@@ -1725,13 +1733,16 @@ contract MasterChef is Ownable, ReentrancyGuard {
         }
         if (points != 0) {
             points = points.div(3);
-            totalAllocPoint = totalAllocPoint.sub(poolInfo[0].allocPoint).add(points);
+            totalAllocPoint = totalAllocPoint.sub(poolInfo[0].allocPoint).add(
+                points
+            );
             poolInfo[0].allocPoint = points;
         }
     }
 
     // SET -- MIGRATOR CONTRACT -- OWNER
-    function setMigrator(IMigratorChef _migrator) public onlyOwner {
+    function setMigrator(IMigratorChef _migrator) public {
+        require(msg.sender == treasury, "setMigrator: must be from treasury");
         migrator = _migrator;
     }
 
@@ -1739,12 +1750,12 @@ contract MasterChef is Ownable, ReentrancyGuard {
     function migrate(uint256 _pid) public validatePoolByPid(_pid) {
         require(address(migrator) != address(0), "migrate: no migrator");
         PoolInfo storage pool = poolInfo[_pid];
-        address lpToken = pool.lpToken;
-        uint256 bal = IHRC20(lpToken).balanceOf(address(this));
-        IHRC20(lpToken).safeApprove(address(migrator), bal);
-        IHRC20 newLpToken = migrator.migrate(IHRC20(lpToken));
+        IHRC20 lpToken = pool.lpToken;
+        uint256 bal = lpToken.balanceOf(address(this));
+        lpToken.safeApprove(address(migrator), bal);
+        IHRC20 newLpToken = migrator.migrate(lpToken);
         require(bal == newLpToken.balanceOf(address(this)), "migrate: bad");
-        pool.lpToken = address(newLpToken);
+        pool.lpToken = newLpToken;
     }
 
     // VIEW -- BONUS MULTIPLIER -- PUBLIC
@@ -1757,11 +1768,17 @@ contract MasterChef is Ownable, ReentrancyGuard {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][_user];
         uint256 accMakiPerShare = pool.accMakiPerShare;
-        uint256 lpSupply = IHRC20(pool.lpToken).balanceOf(address(this));
+        uint256 lpSupply = pool.lpToken.balanceOf(address(this));
         if (block.number > pool.lastRewardBlock && lpSupply != 0) {
-            uint256 multiplier = getMultiplier(pool.lastRewardBlock, block.number);
-            uint256 makiReward = multiplier.mul(makiPerBlock).mul(pool.allocPoint).div(totalAllocPoint);
-            accMakiPerShare = accMakiPerShare.add(makiReward.mul(1e12).div(lpSupply));
+            uint256 multiplier =
+                getMultiplier(pool.lastRewardBlock, block.number);
+            uint256 makiReward =
+                multiplier.mul(makiPerBlock).mul(pool.allocPoint).div(
+                    totalAllocPoint
+                );
+            accMakiPerShare = accMakiPerShare.add(
+                makiReward.mul(1e12).div(lpSupply)
+            );
         }
         return user.amount.mul(accMakiPerShare).div(1e12).sub(user.rewardDebt);
     }
@@ -1780,45 +1797,58 @@ contract MasterChef is Ownable, ReentrancyGuard {
         if (block.number <= pool.lastRewardBlock) {
             return;
         }
-        uint256 lpSupply = IHRC20(pool.lpToken).balanceOf(address(this));
+        uint256 lpSupply = pool.lpToken.balanceOf(address(this));
         if (lpSupply == 0) {
             pool.lastRewardBlock = block.number;
             return;
         }
         uint256 multiplier = getMultiplier(pool.lastRewardBlock, block.number);
-        uint256 makiReward = multiplier.mul(makiPerBlock).mul(pool.allocPoint).div(totalAllocPoint);
-        uint256 adminFee = makiReward.mul(1000).div(9333);
+        uint256 makiReward =
+            multiplier.mul(makiPerBlock).mul(pool.allocPoint).div(
+                totalAllocPoint
+            );
+        uint256 adminFee = makiReward.mul(1000).div(10650);
         uint256 netReward = makiReward.sub(adminFee.mul(2));
 
-        maki.mint(team, adminFee); // 1.5 MAKI per block to team (10.714%)
-        maki.mint(treasury, adminFee); // 1.5 MAKI per block to treasury (10.714%)
-        
+        maki.mint(team, adminFee); // 1.50 MAKI per block to team (9.375%)
+        maki.mint(treasury, adminFee); // 1.50 MAKI per block to treasury (9.375%)
+
         maki.mint(address(soy), netReward);
 
         pool.accMakiPerShare = pool.accMakiPerShare.add(
-            netReward.mul(1e12).div(lpSupply));
+            netReward.mul(1e12).div(lpSupply)
+        );
 
         pool.lastRewardBlock = block.number;
     }
 
     // DEPOSIT -- LP TOKENS -- LP OWNERS
     function deposit(uint256 _pid, uint256 _amount) public nonReentrant validatePoolByPid(_pid) {
-
-        require (_pid != 0, 'deposit MAKI by staking');
+        require(_pid != 0, "deposit MAKI by staking");
 
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
         updatePool(_pid);
 
-        if (user.amount > 0) { // already deposited assets
-            uint256 pending = user.amount.mul(pool.accMakiPerShare).div(1e12).sub(user.rewardDebt);
-            if(pending > 0) { // sends pending rewards, if applicable
+        if (user.amount > 0) {
+            // already deposited assets
+            uint256 pending =
+                user.amount.mul(pool.accMakiPerShare).div(1e12).sub(
+                    user.rewardDebt
+                );
+            if (pending > 0) {
+                // sends pending rewards, if applicable
                 safeMakiTransfer(msg.sender, pending);
             }
         }
 
-        if (_amount > 0) { // if adding more
-            IHRC20(pool.lpToken).safeTransferFrom(address(msg.sender), address(this), _amount);
+        if (_amount > 0) {
+            // if adding more
+            pool.lpToken.safeTransferFrom(
+                address(msg.sender),
+                address(this),
+                _amount
+            );
             user.amount = user.amount.add(_amount);
         }
         user.rewardDebt = user.amount.mul(pool.accMakiPerShare).div(1e12);
@@ -1827,19 +1857,22 @@ contract MasterChef is Ownable, ReentrancyGuard {
 
     // WITHDRAW -- LP TOKENS -- STAKERS
     function withdraw(uint256 _pid, uint256 _amount) public nonReentrant validatePoolByPid(_pid) {
-        require (_pid != 0, 'withdraw MAKI by unstaking');
+        require(_pid != 0, "withdraw MAKI by unstaking");
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
         require(user.amount >= _amount, "withdraw: not good");
 
         updatePool(_pid);
-        uint256 pending = user.amount.mul(pool.accMakiPerShare).div(1e12).sub(user.rewardDebt);
-        if(pending > 0) {
+        uint256 pending =
+            user.amount.mul(pool.accMakiPerShare).div(1e12).sub(
+                user.rewardDebt
+            );
+        if (pending > 0) {
             safeMakiTransfer(msg.sender, pending);
         }
-        if(_amount > 0) {
+        if (_amount > 0) {
             user.amount = user.amount.sub(_amount);
-            IHRC20(pool.lpToken).safeTransfer(address(msg.sender), _amount);
+            pool.lpToken.safeTransfer(address(msg.sender), _amount);
         }
         user.rewardDebt = user.amount.mul(pool.accMakiPerShare).div(1e12);
         emit Withdraw(msg.sender, _pid, _amount);
@@ -1851,13 +1884,20 @@ contract MasterChef is Ownable, ReentrancyGuard {
         UserInfo storage user = userInfo[0][msg.sender];
         updatePool(0);
         if (user.amount > 0) {
-            uint256 pending = user.amount.mul(pool.accMakiPerShare).div(1e12).sub(user.rewardDebt);
-            if(pending > 0) {
+            uint256 pending =
+                user.amount.mul(pool.accMakiPerShare).div(1e12).sub(
+                    user.rewardDebt
+                );
+            if (pending > 0) {
                 safeMakiTransfer(msg.sender, pending);
             }
         }
-        if(_amount > 0) {
-            IHRC20(pool.lpToken).safeTransferFrom(address(msg.sender), address(this), _amount);
+        if (_amount > 0) {
+            pool.lpToken.safeTransferFrom(
+                address(msg.sender),
+                address(this),
+                _amount
+            );
             user.amount = user.amount.add(_amount);
         }
         user.rewardDebt = user.amount.mul(pool.accMakiPerShare).div(1e12);
@@ -1872,17 +1912,20 @@ contract MasterChef is Ownable, ReentrancyGuard {
         UserInfo storage user = userInfo[0][msg.sender];
         require(user.amount >= _amount, "withdraw: not good");
         updatePool(0);
-        uint256 pending = user.amount.mul(pool.accMakiPerShare).div(1e12).sub(user.rewardDebt);
-        if(pending > 0) {
+        uint256 pending =
+            user.amount.mul(pool.accMakiPerShare).div(1e12).sub(
+                user.rewardDebt
+            );
+        if (pending > 0) {
             safeMakiTransfer(msg.sender, pending);
         }
-        if(_amount > 0) {
+        if (_amount > 0) {
             user.amount = user.amount.sub(_amount);
-            IHRC20(pool.lpToken).safeTransfer(address(msg.sender), _amount);
+            pool.lpToken.safeTransfer(address(msg.sender), _amount);
         }
         user.rewardDebt = user.amount.mul(pool.accMakiPerShare).div(1e12);
 
-        soy.burn(_amount);
+        soy.burn(msg.sender, _amount);
         emit Withdraw(msg.sender, 0, _amount);
     }
 
@@ -1893,7 +1936,10 @@ contract MasterChef is Ownable, ReentrancyGuard {
 
     // UPDATE -- TREASURY ADDRESS -- TREASURY || TEAM
     function newTreasury(address _treasury) public {
-        require(msg.sender == treasury || msg.sender == team, "treasury: invalid permissions");
+        require(
+            msg.sender == treasury || msg.sender == team,
+            "treasury: invalid permissions"
+        );
         treasury = _treasury;
         emit Treasury(_treasury);
     }
