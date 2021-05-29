@@ -65,6 +65,17 @@ ___
 - Conventionally, devs import Open Zeppelin smart contracts. However, given Huobi is the smart chain of choice, in instances where ERC20 / BEP20 is referenced a new variant of the contract in question is forked and becomes a unique contract in name only, not in logic.
 - The schema of swap-lib, swap-core, and swap-periphery are modeled exactly like Pancakeswap, from which the repositories are forked and altered to meet the context of Huobi in lieu of Binance.
 
+## Deployed Contracts (Mainnet)
+- [MakiswapFactory.sol](https://hecoinfo.com/address/0x11cdC9Bd86fF68b6A6152037342bAe0c3a717f56#code): 0x11cdC9Bd86fF68b6A6152037342bAe0c3a717f56
+    - `INIT_CODE_PAIR_HASH`: 0x76ad5042ab28d96f7f282da03b97d50271603b12d04aa326091827f6a008f4cf 
+- [MakiswapRouter.sol](https://hecoinfo.com/address/0x7F88bC12aa1Ed9fF4605123649Ac90F2Cd9407eB#code): 0x7F88bC12aa1Ed9fF4605123649Ac90F2Cd9407eB
+
+- [MakiToken.sol](https://hecoinfo.com/address/0x5fad6fbba4bba686ba9b8052cf0bd51699f38b93#code): 0x5fad6fbba4bba686ba9b8052cf0bd51699f38b93
+- [SoyBar.sol](https://hecoinfo.com/address/0xfb4C85B31b888e4F84aC131667865E029D6486F7#code): 0xfb4C85B31b888e4F84aC131667865E029D6486F7
+- [MasterChef.sol](https://hecoinfo.com/address/0x4cb4c9C8cC67B171Ce86eB947cf558AFDBcAB17E#code): 0x4cb4c9C8cC67B171Ce86eB947cf558AFDBcAB17E
+- [SousChef.sol](https://hecoinfo.com/address/#code): 
+
+
 ## Deployed Contracts (Testnet)
 - [MakiswapFactory.sol](https://testnet.hecoinfo.com/address/0xaa4f13E821aD5e0dF3B257D99BA12fd4618d9b26#code): 0xaa4f13E821aD5e0dF3B257D99BA12fd4618d9b26
     - `INIT_CODE_PAIR_HASH`: 0xcf5b20a7c8f9f999a04f5d25a7219dfb7aac456d5f8e07a8a9056ac3eb2ed012
