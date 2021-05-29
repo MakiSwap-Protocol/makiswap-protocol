@@ -73,7 +73,7 @@ ___
 - [MakiToken.sol](https://hecoinfo.com/address/0x5fad6fbba4bba686ba9b8052cf0bd51699f38b93#code): 0x5fad6fbba4bba686ba9b8052cf0bd51699f38b93
 - [SoyBar.sol](https://hecoinfo.com/address/0xfb4C85B31b888e4F84aC131667865E029D6486F7#code): 0xfb4C85B31b888e4F84aC131667865E029D6486F7
 - [MasterChef.sol](https://hecoinfo.com/address/0x4cb4c9C8cC67B171Ce86eB947cf558AFDBcAB17E#code): 0x4cb4c9C8cC67B171Ce86eB947cf558AFDBcAB17E
-- [SousChef.sol](https://hecoinfo.com/address/#code): 
+- [SousChef.sol](https://hecoinfo.com/address/0xDC421d23AafC788997cd4664E1516B93c2783e78#code): 0xDC421d23AafC788997cd4664E1516B93c2783e78
 
 
 ## Deployed Contracts (Testnet)
